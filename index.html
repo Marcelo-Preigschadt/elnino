@@ -65,6 +65,39 @@
             <span>A aceleração gráfica deste navegador não está disponível.</span>
           </div>
 
+          <div class="enso-story-overlay phase-0" id="enso-story-overlay" aria-hidden="true">
+            <svg class="wind-vectors" viewBox="0 0 720 300" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="wind-fade" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0" stop-color="#61e7e5" stop-opacity="0"/>
+                  <stop offset=".28" stop-color="#61e7e5" stop-opacity=".75"/>
+                  <stop offset=".86" stop-color="#b8ffff" stop-opacity=".55"/>
+                  <stop offset="1" stop-color="#b8ffff" stop-opacity="0"/>
+                </linearGradient>
+                <marker id="wind-arrow" markerWidth="8" markerHeight="8" refX="3" refY="3" orient="auto">
+                  <path d="M6 0L0 3L6 6" fill="none" stroke="#9ff7f4" stroke-width="1"/>
+                </marker>
+              </defs>
+              <path d="M565 96 C470 65 355 78 175 112"/>
+              <path d="M580 132 C455 103 340 116 155 145"/>
+              <path d="M565 166 C450 150 330 158 175 177"/>
+            </svg>
+
+            <div class="ocean-signal">
+              <span class="cold-tongue"></span>
+              <span class="warm-surge"></span>
+              <span class="heat-front"></span>
+            </div>
+
+            <div class="convection-core"><i></i><i></i><i></i></div>
+            <span class="basin-label basin-west">OESTE · INDONÉSIA</span>
+            <span class="basin-label basin-east">LESTE · AMÉRICA DO SUL</span>
+            <div class="phenomenon-caption">
+              <small id="phenomenon-kicker">CONDIÇÃO NEUTRA</small>
+              <strong id="phenomenon-action">Alísios empurram o calor para oeste</strong>
+            </div>
+          </div>
+
           <div class="map-label pacific-label">PACÍFICO</div>
           <div class="map-label equator-label">LINHA DO EQUADOR</div>
 

@@ -23,14 +23,17 @@
   const anomalyValue = $('#anomaly-value');
   const windValue = $('#wind-value');
   const rainValue = $('#rain-value');
+  const ensoOverlay = $('#enso-story-overlay');
+  const phenomenonKicker = $('#phenomenon-kicker');
+  const phenomenonAction = $('#phenomenon-action');
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const phases = [
-    { kicker: 'EQUILÍBRIO', title: 'O Pacífico antes do El Niño', label: 'Fase neutra', wind: 'normais', rain: 'oeste' },
-    { kicker: 'ATMOSFERA', title: 'Os ventos alísios perdem força', label: 'Ventos cedem', wind: 'enfraquecendo', rain: 'em trânsito' },
-    { kicker: 'OCEANO', title: 'O calor avança para leste', label: 'Calor avança', wind: 'fracos', rain: 'centro' },
-    { kicker: 'CONVECÇÃO', title: 'A chuva acompanha a água quente', label: 'Chuva migra', wind: 'alterados', rain: 'centro-leste' },
-    { kicker: 'TELECONEXÕES', title: 'O efeito alcança outros continentes', label: 'Impactos remotos', wind: 'reorganizados', rain: 'redistribuída' }
+    { kicker: 'EQUILÍBRIO', title: 'O Pacífico antes do El Niño', label: 'Fase neutra', wind: 'normais', rain: 'oeste', action: 'Alísios empurram o calor para oeste' },
+    { kicker: 'ATMOSFERA', title: 'Os ventos alísios perdem força', label: 'Ventos cedem', wind: 'enfraquecendo', rain: 'em trânsito', action: 'O motor atmosférico começa a ceder' },
+    { kicker: 'OCEANO', title: 'O calor avança para leste', label: 'Calor avança', wind: 'fracos', rain: 'centro', action: 'Uma faixa quente atravessa o Pacífico' },
+    { kicker: 'CONVECÇÃO', title: 'A chuva acompanha a água quente', label: 'Chuva migra', wind: 'alterados', rain: 'centro-leste', action: 'Nuvens e chuva seguem a água aquecida' },
+    { kicker: 'TELECONEXÕES', title: 'O efeito alcança outros continentes', label: 'Impactos remotos', wind: 'reorganizados', rain: 'redistribuída', action: 'A circulação global redistribui o risco' }
   ];
 
   const state = {
@@ -38,6 +41,7 @@
     running: false,
     motionPaused: reduceMotion,
     layer: 0,
+    autoLayer: false,
     time: 0,
     rotation: -2.74,
     tilt: -0.12,
@@ -162,28 +166,34 @@
       float landS = texture2D(uLand, geoUv - vec2(0.0, uLandTexel.y)).r;
       float coastline = clamp(abs(land - landE) + abs(land - landW) + abs(land - landN) + abs(land - landS), 0.0, 1.0);
 
-      float eventStrength = smoothstep(0.05, 0.88, uProgress);
-      float centerLon = 2.70 + 1.50 * eventStrength;
-      float warmWidth = 0.28 + 0.72 * eventStrength;
+      float eventStrength = smoothstep(0.04, 0.74, uProgress);
+      float centerLon = 2.62 + 1.62 * eventStrength;
+      float warmWidth = 0.24 + 0.98 * eventStrength;
       float warmDistance = wrapAngle(lon - centerLon);
-      float warmCore = exp(-pow(warmDistance / warmWidth, 2.0) - pow(lat / 0.145, 2.0));
-      float eastWarm = exp(-pow(wrapAngle(lon + 1.92) / 0.72, 2.0) - pow(lat / 0.19, 2.0));
+      float warmCore = exp(-pow(warmDistance / warmWidth, 2.0) - pow(lat / 0.175, 2.0));
+      float eastWarm = exp(-pow(wrapAngle(lon + 1.92) / 0.88, 2.0) - pow(lat / 0.22, 2.0));
       float coldTongue = exp(-pow(wrapAngle(lon + 1.73) / 0.60, 2.0) - pow(lat / 0.13, 2.0));
-      float anomaly = 1.08 * warmCore * eventStrength + 0.54 * eastWarm * eventStrength - 0.78 * coldTongue * (1.0 - eventStrength);
+      float warmTrail = exp(-pow(wrapAngle(lon - 3.10) / 1.52, 4.0) - pow(lat / 0.205, 2.0));
+      float anomaly = 1.52 * warmCore * eventStrength + 0.92 * eastWarm * eventStrength + 0.38 * warmTrail * eventStrength - 0.90 * coldTongue * (1.0 - eventStrength);
 
       float equatorialWarmth = exp(-pow(lat / 0.72, 2.0));
       float currentTexture = sin(lon * 31.0 + sin(lat * 17.0) * 1.4 + uTime * 0.24);
       currentTexture += 0.55 * sin(lon * 17.0 - lat * 27.0 - uTime * 0.16);
-      float thermalValue = clamp(0.42 + anomaly * 0.40 + (equatorialWarmth - 0.55) * 0.10 + currentTexture * 0.010, 0.0, 1.0);
-      vec3 ocean = thermalPalette(thermalValue);
+      float thermalValue = clamp(0.43 + anomaly * 0.48 + (equatorialWarmth - 0.55) * 0.08 + currentTexture * 0.010, 0.0, 1.0);
+      vec3 baseOcean = mix(vec3(0.018, 0.105, 0.190), vec3(0.020, 0.350, 0.405), equatorialWarmth * 0.82);
+      vec3 anomalyColor = thermalPalette(thermalValue);
+      float anomalyVisibility = clamp(0.28 + abs(anomaly) * 0.92, 0.28, 1.0);
+      vec3 ocean = mix(baseOcean, anomalyColor, anomalyVisibility);
+      float heatFront = exp(-pow((abs(warmDistance) - warmWidth * 0.72) / 0.055, 2.0) - pow(lat / 0.20, 2.0)) * eventStrength;
+      ocean += vec3(1.0, 0.52, 0.12) * heatFront * 0.48;
 
       float basin = exp(-pow(wrapAngle(lon - 3.12) / 1.72, 4.0));
       float equatorGate = exp(-pow(lat / 0.34, 2.0));
       float windStrength = mix(1.0, 0.28, eventStrength);
       float streamline = abs(sin((lat + 0.025 * sin(lon * 3.0 + uTime * 0.12)) * 46.0));
-      streamline = 1.0 - smoothstep(0.025, 0.13, streamline);
+      streamline = 1.0 - smoothstep(0.018, 0.18, streamline);
       float dashPhase = sin(lon * 19.0 + lat * 4.0 + uTime * (2.2 * windStrength + 0.22));
-      float dashes = pow(max(0.0, dashPhase), 9.0);
+      float dashes = pow(max(0.0, dashPhase), 5.0);
       float windField = streamline * dashes * equatorGate * basin;
       vec3 windColor = mix(vec3(0.28, 0.84, 0.86), vec3(0.78, 0.98, 0.95), dashes);
 
@@ -345,6 +355,13 @@
     anomalyValue.textContent = `+${anomaly} °C`;
     windValue.textContent = phase.wind;
     rainValue.textContent = phase.rain;
+    phenomenonKicker.textContent = phaseNumber === 0 ? 'CONDIÇÃO NEUTRA' : `FASE 0${phaseNumber + 1} · ${phase.kicker}`;
+    phenomenonAction.textContent = phase.action;
+    ensoOverlay.style.setProperty('--enso', state.progress.toFixed(3));
+    ensoOverlay.style.setProperty('--front-x', `${27 + state.progress * 47}%`);
+    ensoOverlay.style.setProperty('--convection-x', `${32 + state.progress * 32}%`);
+    ensoOverlay.style.setProperty('--wind-opacity', String(Math.max(.12, 1 - state.progress * .86)));
+    ensoOverlay.className = `enso-story-overlay phase-${phaseNumber}`;
 
     playLabel.textContent = state.running ? 'Pausar fenômeno' : (state.progress > 0.97 ? 'Repetir o fenômeno' : 'Iniciar o fenômeno');
     playSymbol.textContent = state.running ? 'Ⅱ' : '▶';
@@ -359,9 +376,49 @@
 
   function setProgress(value, fromUser = false) {
     state.progress = clamp(value, 0, 1);
-    if (fromUser) state.running = false;
+    if (fromUser) {
+      state.running = false;
+      state.autoLayer = false;
+    }
     state.dirty = true;
     updateInterface();
+  }
+
+  function setLayer(layer) {
+    if (state.layer === layer) return;
+    state.layer = layer;
+    $$('.layer-button').forEach((item) => {
+      const active = Number(item.dataset.layer) === layer;
+      item.classList.toggle('active', active);
+      item.setAttribute('aria-pressed', String(active));
+    });
+    state.dirty = true;
+  }
+
+  function cinematicLayer(progress) {
+    if (progress < .34) return 1;
+    if (progress < .66) return 0;
+    if (progress < .86) return 2;
+    return 0;
+  }
+
+  let lastStoryFrame = performance.now();
+  function advanceStory(now) {
+    const delta = Math.min(.05, Math.max(0, (now - lastStoryFrame) / 1000));
+    lastStoryFrame = now;
+    if (state.running && !state.motionPaused) {
+      state.progress += delta / 14;
+      if (state.autoLayer) setLayer(cinematicLayer(state.progress));
+      if (state.progress >= 1) {
+        state.progress = 1;
+        state.running = false;
+        state.autoLayer = false;
+        setLayer(0);
+      }
+      state.dirty = true;
+      updateInterface();
+    }
+    requestAnimationFrame(advanceStory);
   }
 
   function showFallback(error) {
@@ -420,8 +477,6 @@
 
       let lastFrame = performance.now();
       let lastRender = 0;
-      let lastUiPhase = -1;
-
       const draw = (now) => {
         if (!state.dirty && now - lastRender < 1000 / 30) {
           requestAnimationFrame(draw);
@@ -434,19 +489,7 @@
         if (state.visible && !document.hidden) {
           if (!state.motionPaused) {
             state.time += delta;
-            if (!state.dragging) state.rotation += delta * 0.018;
-            if (state.running) {
-              state.progress += delta / 18;
-              if (state.progress >= 1) {
-                state.progress = 1;
-                state.running = false;
-              }
-              const currentUiPhase = Math.floor(state.progress * 1000);
-              if (currentUiPhase !== lastUiPhase) {
-                updateInterface();
-                lastUiPhase = currentUiPhase;
-              }
-            }
+            if (!state.dragging && !state.running) state.rotation += delta * 0.018;
           }
 
           resizeCanvas(gl);
@@ -474,14 +517,6 @@
         .finally(() => {
           state.ready = true;
           loadingElement.classList.add('ready');
-          if (!reduceMotion) {
-            window.setTimeout(() => {
-              if (!state.motionPaused && state.progress === 0) {
-                state.running = true;
-                updateInterface();
-              }
-            }, 700);
-          }
         });
 
       resizeCanvas(gl);
@@ -494,8 +529,16 @@
   }
 
   playButton.addEventListener('click', () => {
-    if (state.progress > 0.97 && !state.running) state.progress = 0;
-    state.running = !state.running;
+    const starting = !state.running;
+    if (state.progress > 0.97 && starting) state.progress = 0;
+    state.running = starting;
+    state.autoLayer = starting;
+    if (starting) {
+      state.rotation = -2.74;
+      state.tilt = -0.12;
+      state.zoom = 0.91;
+      setLayer(cinematicLayer(state.progress));
+    }
     if (state.running && state.motionPaused) {
       state.motionPaused = false;
       document.body.classList.remove('motion-paused');
@@ -513,13 +556,8 @@
 
   $$('.layer-button').forEach((button) => {
     button.addEventListener('click', () => {
-      state.layer = Number(button.dataset.layer);
-      $$('.layer-button').forEach((item) => {
-        const active = item === button;
-        item.classList.toggle('active', active);
-        item.setAttribute('aria-pressed', String(active));
-      });
-      state.dirty = true;
+      state.autoLayer = false;
+      setLayer(Number(button.dataset.layer));
     });
   });
 
@@ -596,4 +634,5 @@
 
   updateInterface(true);
   initializeGlobe();
+  requestAnimationFrame(advanceStory);
 })();
