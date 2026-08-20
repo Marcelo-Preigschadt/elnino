@@ -9,7 +9,8 @@ mecanismo oceano-atmosfera aos impactos no Brasil e no mundo.
 - mapa interativo com base OpenStreetMap/CARTO;
 - animação em cinco etapas;
 - camadas independentes de oceano, ventos, chuva e impactos;
-- anomalias térmicas, ventos, ressurgência e teleconexões animadas;
+- composição Canvas com campo térmico interpolado em tempo real;
+- partículas de vento, correntes quentes, chuva e teleconexões animadas;
 - pontos de impacto clicáveis;
 - corte lateral do Pacífico com termoclina dinâmica;
 - recorte específico para Sul, Norte e Nordeste do Brasil;
