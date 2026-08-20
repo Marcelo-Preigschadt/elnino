@@ -425,7 +425,8 @@
     console.error(error);
     loadingElement.classList.add('ready');
     fallbackElement.hidden = false;
-    canvas.style.opacity = '0.18';
+    stageElement.classList.add('fallback-mode');
+    canvas.style.opacity = '0';
   }
 
   function initializeGlobe() {

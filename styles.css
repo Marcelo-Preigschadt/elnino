@@ -317,6 +317,37 @@ h1 em, h2 em { color: var(--orange); font-style: normal; }
 .webgl-fallback:not([hidden]) { display: flex; }
 .webgl-fallback strong { color: var(--ink); }
 .webgl-fallback span { max-width: 310px; color: var(--muted); font-size: 12px; }
+.globe-stage.fallback-mode::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 1;
+  width: min(62%, 470px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(89,225,222,.34);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 25%, rgba(91,219,215,.22), transparent 22%),
+    radial-gradient(ellipse at 64% 52%, rgba(30,166,184,.58), transparent 24%),
+    radial-gradient(circle at 50% 55%, #0a4f61, #052a38 54%, #03141b 72%);
+  box-shadow: inset -40px -25px 70px rgba(0,0,0,.72), 0 0 45px rgba(50,210,207,.16);
+}
+.globe-stage.fallback-mode .webgl-fallback {
+  inset: auto 16px 62px auto;
+  width: 200px;
+  padding: 8px 10px;
+  align-items: flex-start;
+  gap: 2px;
+  color: var(--muted);
+  background: rgba(4,18,23,.72);
+  border: 1px solid var(--line);
+  text-align: left;
+  backdrop-filter: blur(8px);
+}
+.globe-stage.fallback-mode .webgl-fallback strong { font-size: 9px; }
+.globe-stage.fallback-mode .webgl-fallback span { font-size: 8px; line-height: 1.35; }
 
 .enso-story-overlay {
   --enso: 0;
