@@ -1,441 +1,208 @@
 <!doctype html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="description"
-      content="Uma experiência interativa para entender como o El Niño nasce no Pacífico e altera o clima em diferentes regiões do planeta."
-    />
-    <meta name="theme-color" content="#061922" />
-    <meta property="og:title" content="El Niño — O Pacífico muda. O planeta sente." />
-    <meta
-      property="og:description"
-      content="Recrie o fenômeno, acompanhe o deslocamento do calor pelo Pacífico e descubra seus impactos no Brasil e no mundo."
-    />
-    <meta property="og:type" content="website" />
-    <title>El Niño — O Pacífico muda. O planeta sente.</title>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#041217">
+  <meta name="description" content="Uma experiência interativa sobre como o El Niño reorganiza o oceano, a atmosfera e o risco climático.">
+  <title>El Niño — O oceano muda. O planeta sente.</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#experiencia">Pular para a experiência</a>
 
-    <link rel="preconnect" href="https://unpkg.com" />
-    <link rel="preconnect" href="https://basemaps.cartocdn.com" />
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      integrity="sha256-p4NxAoJBhIINfQ3ynEOlZ+MZrB0XQdK8TJ5UVjMZyss="
-      crossorigin=""
-    />
-    <link rel="stylesheet" href="styles.css?v=2.0.0" />
-  </head>
+  <header class="site-header" id="topo">
+    <a class="brand" href="#topo" aria-label="El Niño — início">
+      <span class="brand-mark" aria-hidden="true"><i></i></span>
+      <span>EL NIÑO</span>
+      <small>EXPERIÊNCIA CLIMÁTICA</small>
+    </a>
+    <nav aria-label="Navegação principal">
+      <a href="#fenomeno">O fenômeno</a>
+      <a href="#impactos">Impactos</a>
+      <a href="#agir">Como agir</a>
+    </nav>
+    <button class="header-control" id="motion-toggle" type="button" aria-pressed="false">
+      <span class="control-icon" aria-hidden="true"></span>
+      <span class="motion-label">Pausar movimento</span>
+    </button>
+  </header>
 
-  <body>
-    <a class="skip-link" href="#simulador">Ir para a simulação</a>
+  <main>
+    <section class="hero" id="experiencia" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow"><span></span> O PACÍFICO DÁ O PRIMEIRO SINAL</p>
+        <h1 id="hero-title">O oceano muda.<br><em>O planeta sente.</em></h1>
+        <p class="hero-lead">Gire o globo, avance no tempo e veja uma faixa de água quente reorganizar ventos, chuva e risco climático a milhares de quilômetros.</p>
 
-    <header class="site-header">
-      <a class="brand" href="#simulador" aria-label="Voltar ao início">
-        <span class="brand-mark" aria-hidden="true"></span>
-        <span>EL NIÑO</span>
-        <small>experiência climática</small>
-      </a>
-
-      <nav aria-label="Navegação principal">
-        <a href="#mecanismo">O fenômeno</a>
-        <a href="#impactos">Impactos</a>
-        <a href="#agir">Como agir</a>
-      </nav>
-
-      <button class="soundless-status" type="button" id="motion-toggle" aria-pressed="false">
-        <span aria-hidden="true">◌</span>
-        Pausar animações
-      </button>
-    </header>
-
-    <main>
-      <section class="simulator-section" id="simulador" aria-labelledby="hero-title">
-        <div class="story-panel">
-          <div class="eyebrow">
-            <span class="live-dot" aria-hidden="true"></span>
-            Simulação didática interativa
-          </div>
-
-          <h1 id="hero-title">O Pacífico muda.<br /><em>O planeta sente.</em></h1>
-          <p class="hero-copy">
-            Enfraqueça os ventos, desloque uma massa colossal de água quente e observe
-            o efeito dominó atravessar oceanos e continentes.
-          </p>
-
-          <div class="primary-actions">
-            <button class="button button-primary" id="play-button" type="button">
-              <span class="play-symbol" aria-hidden="true">▶</span>
-              Reproduzir o fenômeno
-            </button>
-            <button class="button button-ghost" id="reset-button" type="button">
-              Reiniciar
-            </button>
-          </div>
-
-          <div class="phase-readout" aria-live="polite">
-            <div class="phase-number" id="phase-number">01</div>
-            <div>
-              <span class="phase-kicker" id="phase-kicker">Condições normais</span>
-              <h2 id="phase-title">O Pacífico em equilíbrio</h2>
-              <p id="phase-description">
-                Ventos alísios empurram a água superficial quente para oeste. Próximo
-                à América do Sul, águas profundas, frias e ricas em nutrientes sobem
-                até a superfície.
-              </p>
-            </div>
-          </div>
-
-          <ol class="phase-list" aria-label="Etapas da simulação">
-            <li class="active"><button type="button" data-stage="0">Equilíbrio</button></li>
-            <li><button type="button" data-stage="1">Ventos enfraquecem</button></li>
-            <li><button type="button" data-stage="2">Calor avança</button></li>
-            <li><button type="button" data-stage="3">Chuva se desloca</button></li>
-            <li><button type="button" data-stage="4">Impactos globais</button></li>
-          </ol>
-
-          <p class="simulation-note">
-            A visualização representa mecanismos e tendências típicas. Cada episódio
-            de El Niño é diferente e não produz os mesmos efeitos em todos os lugares.
-          </p>
-        </div>
-
-        <div class="map-stage">
-          <div id="map" role="application" aria-label="Mapa interativo do fenômeno El Niño"></div>
-          <canvas
-            id="climate-canvas"
-            aria-hidden="true"
-          ></canvas>
-          <div class="map-vignette" aria-hidden="true"></div>
-
-          <div class="map-narrative" aria-hidden="true">
-            <span id="map-narrative-kicker">PACÍFICO EQUATORIAL</span>
-            <strong id="map-narrative-title">Circulação normal</strong>
-          </div>
-
-          <div class="map-hud" aria-live="polite">
-            <div>
-              <span>Estado do sistema</span>
-              <strong id="state-label">NEUTRO</strong>
-            </div>
-            <div>
-              <span>Anomalia ilustrativa</span>
-              <strong id="anomaly-label">+0,0 °C</strong>
-            </div>
-            <div>
-              <span>Ventos alísios</span>
-              <strong id="wind-label">FORTES</strong>
-            </div>
-          </div>
-
-          <div class="layer-control" aria-label="Camadas do mapa">
-            <span>Camadas</span>
-            <label>
-              <input type="checkbox" id="layer-ocean" checked />
-              <span>Oceano</span>
-            </label>
-            <label>
-              <input type="checkbox" id="layer-wind" checked />
-              <span>Ventos</span>
-            </label>
-            <label>
-              <input type="checkbox" id="layer-rain" checked />
-              <span>Chuva</span>
-            </label>
-            <label>
-              <input type="checkbox" id="layer-impact" checked />
-              <span>Impactos</span>
-            </label>
-          </div>
-
-          <div class="map-focus">
-            <button type="button" id="focus-pacific">Pacífico</button>
-            <button type="button" id="focus-brazil">Brasil</button>
-          </div>
-
-          <div class="timeline-control">
-            <div class="timeline-topline">
-              <label for="stage-slider">Evolução do fenômeno</label>
-              <output id="stage-output" for="stage-slider">0%</output>
-            </div>
-            <input
-              id="stage-slider"
-              type="range"
-              min="0"
-              max="4"
-              step="0.01"
-              value="0"
-              aria-valuetext="Condições normais"
-            />
-            <div class="timeline-labels" aria-hidden="true">
-              <span>Normal</span>
-              <span>El Niño estabelecido</span>
-            </div>
-          </div>
-
-          <div class="temperature-legend" aria-label="Legenda de anomalia da temperatura do oceano">
-            <span>mais frio</span>
-            <i aria-hidden="true"></i>
-            <span>mais quente</span>
-          </div>
-
-          <aside class="impact-popup" id="impact-popup" aria-live="polite" hidden>
-            <button type="button" id="close-impact" aria-label="Fechar detalhe">×</button>
-            <span id="impact-tag">REGIÃO</span>
-            <h3 id="impact-title">Impacto</h3>
-            <p id="impact-text"></p>
-            <small>Tendência típica — a intensidade varia entre episódios.</small>
-          </aside>
-        </div>
-      </section>
-
-      <section class="section mechanism-section" id="mecanismo" aria-labelledby="mechanism-title">
-        <div class="section-heading">
-          <span class="section-index">01 — O MECANISMO</span>
-          <h2 id="mechanism-title">Não é apenas água quente.<br />É um sistema acoplado.</h2>
-          <p>
-            Oceano e atmosfera retroalimentam a mudança. Quando os ventos perdem força,
-            o calor avança para leste; o oceano aquece a atmosfera, a chuva muda de
-            lugar e os ventos podem enfraquecer ainda mais.
-          </p>
-        </div>
-
-        <div class="mechanism-grid">
-          <article>
-            <span class="card-number">1</span>
-            <h3>Ventos alísios</h3>
-            <p>
-              Em condições normais, sopram de leste para oeste sobre o Pacífico
-              Equatorial. No El Niño, enfraquecem e podem até se inverter.
-            </p>
-            <div class="mini-wind" aria-hidden="true">
-              <i></i><i></i><i></i>
-            </div>
-          </article>
-
-          <article>
-            <span class="card-number">2</span>
-            <h3>Ressurgência</h3>
-            <p>
-              A subida de água fria e rica em nutrientes junto à costa sul-americana
-              é reduzida, afetando a produtividade marinha e a cadeia alimentar.
-            </p>
-            <div class="mini-upwelling" aria-hidden="true">
-              <i></i><i></i><i></i>
-            </div>
-          </article>
-
-          <article>
-            <span class="card-number">3</span>
-            <h3>Circulação de Walker</h3>
-            <p>
-              A região de maior convecção e chuva se desloca para o centro e o leste do
-              Pacífico, reorganizando parte da circulação atmosférica tropical.
-            </p>
-            <div class="mini-walker" aria-hidden="true">
-              <i></i>
-            </div>
-          </article>
-        </div>
-
-        <div class="ocean-section">
-          <div class="ocean-header">
-            <div>
-              <span>RAIO-X DO PACÍFICO EQUATORIAL</span>
-              <h3 id="cross-section-title">Condições normais</h3>
-            </div>
-            <p id="cross-section-copy">
-              A termoclina é mais rasa no leste, favorecendo a ressurgência junto à
-              América do Sul.
-            </p>
-          </div>
-
-          <div class="ocean-diagram" id="ocean-diagram" aria-label="Corte lateral ilustrativo do Oceano Pacífico">
-            <div class="continent asia">ÁSIA / OCEANIA</div>
-            <div class="continent america">AMÉRICA DO SUL</div>
-            <div class="cloud-field" aria-hidden="true">
-              <i></i><i></i><i></i>
-            </div>
-            <div class="surface-label west">água mais quente</div>
-            <div class="surface-label east">ressurgência fria</div>
-            <div class="warm-water" aria-hidden="true"></div>
-            <div class="cold-water" aria-hidden="true"></div>
-            <div class="thermocline" aria-hidden="true"></div>
-            <div class="upwelling-arrows" aria-hidden="true"><i></i><i></i><i></i></div>
-            <div class="depth-labels" aria-hidden="true">
-              <span>SUPERFÍCIE</span>
-              <span>PROFUNDIDADE</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="section impact-section" id="impactos" aria-labelledby="impact-heading">
-        <div class="section-heading impact-heading">
-          <span class="section-index">02 — O EFEITO DOMINÓ</span>
-          <h2 id="impact-heading">Um fenômeno global.<br />Impactos profundamente locais.</h2>
-          <p>
-            O El Niño altera probabilidades, não determina sozinho cada tempestade,
-            seca ou onda de calor. Outros oceanos, sistemas atmosféricos e a mudança
-            climática modulam o resultado.
-          </p>
-        </div>
-
-        <div class="impact-selector" role="tablist" aria-label="Selecione uma região">
-          <button type="button" role="tab" aria-selected="true" data-impact-card="south-brazil">
-            Sul do Brasil
+        <div class="hero-actions">
+          <button class="primary-button" id="play-button" type="button">
+            <span class="play-symbol" aria-hidden="true">▶</span>
+            <span class="play-label">Iniciar o fenômeno</span>
           </button>
-          <button type="button" role="tab" aria-selected="false" data-impact-card="north-brazil">
-            Norte e Nordeste
-          </button>
-          <button type="button" role="tab" aria-selected="false" data-impact-card="peru">
-            Peru e Equador
-          </button>
-          <button type="button" role="tab" aria-selected="false" data-impact-card="oceania">
-            Indonésia e Austrália
-          </button>
+          <a class="text-link" href="#fenomeno">Entender a ciência <span aria-hidden="true">↓</span></a>
         </div>
 
-        <div class="impact-story" id="impact-story">
-          <div class="impact-visual rain">
-            <span class="impact-coordinate">29,7° S · 53,0° O</span>
-            <div class="weather-symbol" aria-hidden="true">
-              <i></i><i></i><i></i><i></i>
-            </div>
-            <strong>CHUVA<br />ACIMA DA MÉDIA</strong>
-          </div>
+        <div class="hero-facts" aria-label="Fatos principais">
+          <div><strong>Pacífico tropical</strong><span>onde o sinal começa</span></div>
+          <div><strong>Meses</strong><span>não um evento de um dia</span></div>
+          <div><strong>Escala global</strong><span>impactos por teleconexões</span></div>
+        </div>
+      </div>
 
-          <div class="impact-content">
-            <span id="story-region">SUL DO BRASIL</span>
-            <h3 id="story-title">Quando a água encontra um território vulnerável</h3>
-            <p id="story-copy">
-              Na primavera, episódios de El Niño tendem a favorecer chuva acima da
-              média no Sul. Solo saturado, ocupação de áreas inundáveis e drenagem
-              insuficiente transformam o evento climático em desastre.
-            </p>
-            <ul id="story-list">
-              <li>Maior risco de enchentes e deslizamentos</li>
-              <li>Prejuízos a lavouras e infraestrutura</li>
-              <li>Impactos sobre moradia, mobilidade e saúde</li>
-            </ul>
-            <button class="text-button" type="button" id="show-on-map">
-              Mostrar esta região no mapa <span aria-hidden="true">↗</span>
-            </button>
-          </div>
+      <div class="experience-panel">
+        <div class="panel-head">
+          <div><span class="live-dot" aria-hidden="true"></span><span>MODELO VISUAL INTERATIVO</span></div>
+          <span>Arraste para girar · role para aproximar</span>
         </div>
 
-        <div class="brazil-contrast">
-          <div>
-            <span>NORTE / NORDESTE</span>
-            <strong>menos chuva</strong>
-            <p>Seca, rios mais baixos, pressão sobre agricultura e maior risco de incêndios.</p>
-          </div>
-          <div class="contrast-center" aria-hidden="true">
-            <i></i>
-            <span>O MESMO<br />PACÍFICO</span>
-          </div>
-          <div>
-            <span>SUL</span>
-            <strong>mais chuva</strong>
-            <p>Enchentes, deslizamentos, encharcamento do solo e perdas agrícolas.</p>
-          </div>
-        </div>
-      </section>
-
-      <section class="section action-section" id="agir" aria-labelledby="action-title">
-        <div class="action-panel">
-          <div class="action-copy">
-            <span class="section-index">03 — CONHECIMENTO QUE PROTEGE</span>
-            <h2 id="action-title">O fenômeno é natural.<br /><em>O desastre não precisa ser.</em></h2>
-            <p>
-              Previsão, alerta, planejamento urbano e resposta coordenada reduzem
-              perdas. Informação só vira proteção quando chega antes do impacto e
-              produz ação.
-            </p>
+        <div class="globe-stage" id="globe-stage">
+          <canvas id="globe-canvas" aria-label="Globo interativo mostrando a evolução térmica do El Niño"></canvas>
+          <div class="globe-loading" id="globe-loading" role="status"><span></span>Preparando o oceano</div>
+          <div class="webgl-fallback" id="webgl-fallback" hidden>
+            <strong>Visualização simplificada</strong>
+            <span>A aceleração gráfica deste navegador não está disponível.</span>
           </div>
 
-          <div class="alert-card">
-            <span>ALERTA GRATUITO DA DEFESA CIVIL</span>
-            <p>Envie o CEP da região de interesse por SMS para</p>
-            <strong>40199</strong>
-            <small>O cadastro e o recebimento dos alertas são gratuitos.</small>
+          <div class="map-label pacific-label">PACÍFICO</div>
+          <div class="map-label equator-label">LINHA DO EQUADOR</div>
+
+          <div class="globe-readout" aria-live="polite">
+            <span id="stage-index">01</span>
+            <div><small id="stage-kicker">EQUILÍBRIO</small><strong id="stage-title">O Pacífico antes do El Niño</strong></div>
+          </div>
+
+          <div class="data-hud">
+            <div><span>Anomalia ilustrativa</span><strong id="anomaly-value">+0,0 °C</strong></div>
+            <div><span>Ventos alísios</span><strong id="wind-value">normais</strong></div>
+            <div><span>Convecção</span><strong id="rain-value">oeste</strong></div>
+          </div>
+
+          <div class="layer-controls" role="group" aria-label="Camada visual">
+            <button class="layer-button active" type="button" data-layer="0" aria-pressed="true"><i class="heat-icon"></i> Térmica</button>
+            <button class="layer-button" type="button" data-layer="1" aria-pressed="false"><i class="wind-icon"></i> Ventos</button>
+            <button class="layer-button" type="button" data-layer="2" aria-pressed="false"><i class="rain-icon"></i> Chuva</button>
+          </div>
+
+          <div class="thermal-legend" aria-label="Escala de anomalia de temperatura da superfície do mar">
+            <span>mais frio</span><i></i><span>mais quente</span>
           </div>
         </div>
 
-        <div class="action-grid">
-          <article>
-            <span>ANTES</span>
-            <h3>Conheça o risco</h3>
-            <p>
-              Identifique rotas seguras, áreas inundáveis, pontos de apoio e pessoas
-              que precisarão de ajuda.
-            </p>
-          </article>
-          <article>
-            <span>DURANTE</span>
-            <h3>Respeite os alertas</h3>
-            <p>
-              Não atravesse áreas alagadas, encostas instáveis ou pontes submersas.
-              Priorize a saída antecipada.
-            </p>
-          </article>
-          <article>
-            <span>SEMPRE</span>
-            <h3>Cobre prevenção</h3>
-            <p>
-              Monitoramento, drenagem, moradia segura, proteção de rios e planos de
-              contingência salvam vidas.
-            </p>
-          </article>
+        <div class="timeline">
+          <div class="timeline-top"><span>EVOLUÇÃO DO FENÔMENO</span><output id="timeline-output" for="timeline-range">Fase neutra</output></div>
+          <input id="timeline-range" type="range" min="0" max="100" value="0" aria-label="Avançar a evolução do El Niño">
+          <div class="timeline-marks" aria-hidden="true"><span>Neutro</span><span>Ventos cedem</span><span>Calor avança</span><span>Chuva migra</span><span>Impactos</span></div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section class="sources-section" id="fontes" aria-labelledby="sources-title">
-        <div>
-          <span class="section-index">FONTES E TRANSPARÊNCIA</span>
-          <h2 id="sources-title">Ciência aberta para uma decisão melhor.</h2>
-          <p>
-            Conteúdo fundamentado em instituições públicas de meteorologia, clima e
-            monitoramento de desastres. A simulação é conceitual e não substitui
-            boletins ou alertas oficiais.
-          </p>
+    <section class="science-section" id="fenomeno" aria-labelledby="science-title">
+      <div class="section-intro reveal">
+        <p class="eyebrow"><span></span> O MECANISMO</p>
+        <h2 id="science-title">Não é só água quente.<br>É uma <em>mudança de engrenagem.</em></h2>
+        <p>O El Niño nasce do acoplamento entre oceano e atmosfera. Uma alteração reforça a outra até mudar a circulação do Pacífico tropical.</p>
+      </div>
+
+      <div class="mechanism reveal">
+        <div class="ocean-cutaway" aria-label="Corte esquemático do oceano Pacífico durante El Niño">
+          <div class="cutaway-head"><span>OESTE · INDONÉSIA</span><span>LESTE · AMÉRICA DO SUL</span></div>
+          <div class="atmosphere-band">
+            <div class="trade-flow"><i></i><i></i><i></i></div>
+            <span>ventos alísios enfraquecem</span>
+          </div>
+          <div class="surface-band"><div class="warm-pool"></div><span>água quente avança para leste</span></div>
+          <div class="deep-ocean"><div class="thermocline"></div><span>termoclina se aprofunda no leste</span></div>
+          <div class="upwelling"><i></i><span>menos ressurgência</span></div>
         </div>
-        <div class="source-links">
-          <a href="https://oceanservice.noaa.gov/facts/ninonina.html" target="_blank" rel="noreferrer">
-            <span>NOAA</span>
-            O que são El Niño e La Niña? <b>↗</b>
-          </a>
-          <a href="https://science.nasa.gov/earth/explore/el-nino/" target="_blank" rel="noreferrer">
-            <span>NASA</span>
-            El Niño observado da Terra e do espaço <b>↗</b>
-          </a>
-          <a href="https://clima.cptec.inpe.br/enos" target="_blank" rel="noreferrer">
-            <span>CPTEC / INPE</span>
-            ENOS e impactos no Brasil <b>↗</b>
-          </a>
-          <a href="https://www.gov.br/cemaden/pt-br" target="_blank" rel="noreferrer">
-            <span>CEMADEN</span>
-            Monitoramento e alertas de desastres <b>↗</b>
-          </a>
-          <a href="https://wmo.int/themes/el-nino-la-nina-phenomena" target="_blank" rel="noreferrer">
-            <span>OMM / WMO</span>
-            Fenômenos El Niño e La Niña <b>↗</b>
-          </a>
-        </div>
-      </section>
-    </main>
 
-    <footer>
-      <p>EL NIÑO — EXPERIÊNCIA CLIMÁTICA INTERATIVA</p>
-      <a href="#simulador">Voltar ao mapa ↑</a>
-      <p>Dados conceituais · Tendências, não certezas</p>
-    </footer>
+        <ol class="mechanism-steps">
+          <li><span>01</span><div><strong>Os ventos perdem força</strong><p>Os alísios, que normalmente empurram a superfície para oeste, enfraquecem.</p></div></li>
+          <li><span>02</span><div><strong>O calor se desloca</strong><p>A piscina de água quente se espalha pelo centro e leste do Pacífico.</p></div></li>
+          <li><span>03</span><div><strong>O oceano profundo responde</strong><p>A subida de água fria e rica em nutrientes diminui perto da América do Sul.</p></div></li>
+          <li><span>04</span><div><strong>A chuva muda de endereço</strong><p>A convecção tropical acompanha a água mais quente e altera a circulação atmosférica.</p></div></li>
+        </ol>
+      </div>
+    </section>
 
-    <script
-      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-      crossorigin=""
-    ></script>
-    <script src="app.js?v=2.0.0"></script>
-  </body>
+    <section class="impact-section" id="impactos" aria-labelledby="impact-title">
+      <div class="impact-heading reveal">
+        <p class="eyebrow"><span></span> TELECONEXÕES</p>
+        <h2 id="impact-title">Um oceano.<br><em>Muitos efeitos possíveis.</em></h2>
+        <p>El Niño muda probabilidades — não determina sozinho cada tempestade, seca ou onda de calor.</p>
+      </div>
+
+      <div class="impact-grid">
+        <article class="impact-card rain-card reveal">
+          <span class="card-number">01</span>
+          <div class="impact-symbol rain-symbol" aria-hidden="true"><i></i><i></i><i></i></div>
+          <p class="card-kicker">SUL DO BRASIL</p>
+          <h3>Chuva acima da média pode ganhar força</h3>
+          <p>Aumenta o risco de enchentes, deslizamentos e perdas no campo quando outros fatores também favorecem extremos.</p>
+          <strong>PREPARAR: drenagem, alertas e rotas seguras</strong>
+        </article>
+
+        <article class="impact-card drought-card reveal">
+          <span class="card-number">02</span>
+          <div class="impact-symbol sun-symbol" aria-hidden="true"><i></i></div>
+          <p class="card-kicker">NORTE E NORDESTE</p>
+          <h3>Seca e calor podem se intensificar</h3>
+          <p>Em partes da região, a chance de chuva abaixo da média cresce, pressionando água, saúde, energia e agricultura.</p>
+          <strong>PREPARAR: água, saúde e manejo do fogo</strong>
+        </article>
+
+        <article class="impact-card ocean-card reveal">
+          <span class="card-number">03</span>
+          <div class="impact-symbol fish-symbol" aria-hidden="true"><i></i></div>
+          <p class="card-kicker">PACÍFICO LESTE</p>
+          <h3>A cadeia marinha perde nutrientes</h3>
+          <p>Com menos ressurgência, o fitoplâncton pode diminuir e afetar peixes, aves, pesca e renda costeira.</p>
+          <strong>PREPARAR: monitoramento e gestão adaptativa</strong>
+        </article>
+      </div>
+
+      <aside class="context-note reveal">
+        <strong>Clima não é destino.</strong>
+        <p>O aquecimento global eleva a temperatura de fundo sobre a qual El Niño atua. O impacto real depende da intensidade do evento, da estação, da região e da vulnerabilidade local.</p>
+      </aside>
+    </section>
+
+    <section class="action-section" id="agir" aria-labelledby="action-title">
+      <div class="action-copy reveal">
+        <p class="eyebrow light"><span></span> DA INFORMAÇÃO À AÇÃO</p>
+        <h2 id="action-title">Previsão só protege<br>quando vira <em>decisão.</em></h2>
+        <p>Acompanhe fontes oficiais, conheça os riscos do seu território e combine antes o que fazer em caso de alerta.</p>
+      </div>
+
+      <div class="action-list reveal">
+        <div><span>01</span><p><strong>Ative alertas oficiais</strong>Envie o CEP por SMS para <b>40199</b> e receba avisos da Defesa Civil.</p></div>
+        <div><span>02</span><p><strong>Conheça seu risco local</strong>Identifique pontos de alagamento, encostas, rotas seguras e abrigos.</p></div>
+        <div><span>03</span><p><strong>Planeje antes do extremo</strong>Separe documentos, medicamentos, contatos e uma pequena reserva de água.</p></div>
+      </div>
+    </section>
+
+    <section class="sources-section" aria-labelledby="sources-title">
+      <div>
+        <p class="eyebrow"><span></span> BASE CIENTÍFICA</p>
+        <h2 id="sources-title">Explore além da visualização.</h2>
+      </div>
+      <div class="source-links">
+        <a href="https://science.nasa.gov/earth/explore/el-nino/" target="_blank" rel="noopener"><span>NASA Earth Science</span><strong>El Niño explicado ↗</strong></a>
+        <a href="https://svs.gsfc.nasa.gov/5213/" target="_blank" rel="noopener"><span>NASA Scientific Visualization Studio</span><strong>Oceano e atmosfera ↗</strong></a>
+        <a href="https://www.climate.gov/enso" target="_blank" rel="noopener"><span>NOAA Climate.gov</span><strong>ENSO em detalhes ↗</strong></a>
+        <a href="https://wmo.int/themes/el-nino-la-nina-phenomena" target="_blank" rel="noopener"><span>Organização Meteorológica Mundial</span><strong>Impactos globais ↗</strong></a>
+      </div>
+      <p class="model-note">A animação é uma representação educativa baseada no mecanismo físico do fenômeno. Não exibe observações em tempo real nem substitui previsões oficiais.</p>
+    </section>
+  </main>
+
+  <footer>
+    <a class="brand footer-brand" href="#topo"><span class="brand-mark" aria-hidden="true"><i></i></span><span>EL NIÑO</span></a>
+    <p>Entender o risco é o primeiro passo para reduzi-lo.</p>
+    <a href="#topo">Voltar ao topo ↑</a>
+  </footer>
+
+  <noscript><div class="noscript">Ative o JavaScript para explorar o globo climático interativo.</div></noscript>
+</body>
 </html>

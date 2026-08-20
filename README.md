@@ -1,47 +1,42 @@
-# El Niño — experiência climática interativa
+# El Niño — experiência climática
 
-Site estático, responsivo e pronto para GitHub Pages. A experiência recria, de
-forma didática, a evolução típica do El Niño no Pacífico Equatorial e conecta o
-mecanismo oceano-atmosfera aos impactos no Brasil e no mundo.
+Uma narrativa interativa sobre o acoplamento oceano–atmosfera do El Niño, seus possíveis impactos e formas de preparação.
 
-## Recursos
+## Nova arquitetura visual
 
-- mapa interativo com base OpenStreetMap/CARTO;
-- animação em cinco etapas;
-- camadas independentes de oceano, ventos, chuva e impactos;
-- composição Canvas com campo térmico interpolado em tempo real;
-- partículas de vento, correntes quentes, chuva e teleconexões animadas;
-- pontos de impacto clicáveis;
-- corte lateral do Pacífico com termoclina dinâmica;
-- recorte específico para Sul, Norte e Nordeste do Brasil;
-- orientações de prevenção e acesso ao alerta SMS 40199;
-- navegação por teclado e suporte a redução de movimento;
-- layout adaptado para computador, tablet e celular.
+- Globo 3D renderizado diretamente na GPU com WebGL 1.0.
+- Anomalia térmica, ventos e convecção calculados em fragment shader.
+- Um único draw call por quadro; sem partículas no DOM, Leaflet ou tiles externos.
+- Continentes carregados localmente de um GeoJSON simplificado e convertidos uma única vez em textura.
+- Resolução gráfica limitada a 1,5× o DPR para manter fluidez em notebooks e celulares.
+- Renderização suspensa quando a aba ou o globo não estão visíveis.
+- Controles por arraste, roda/pinça, linha do tempo e camadas temáticas.
+- Preferência de movimento reduzido respeitada e fallback explícito para navegadores sem WebGL.
 
-## Publicação no GitHub Pages
+## Executar localmente
 
-1. Abra **Settings → Pages** no repositório.
-2. Em **Build and deployment**, selecione **Deploy from a branch**.
-3. Escolha a branch main, pasta / (root) e clique em **Save**.
+O GeoJSON é carregado por `fetch`, portanto abra o projeto por um servidor HTTP local:
 
-O endereço será:
+```bash
+python3 -m http.server 8080
+```
 
-https://marcelo-preigschadt.github.io/elnino/
+Depois acesse `http://localhost:8080`.
+
+## Conteúdo e fontes
+
+A animação representa o mecanismo físico do fenômeno para fins educativos; não contém observações ou previsão em tempo real.
+
+- [NASA Earth Science — El Niño](https://science.nasa.gov/earth/explore/el-nino/)
+- [NASA Scientific Visualization Studio — Ocean and atmosphere during ENSO](https://svs.gsfc.nasa.gov/5213/)
+- [NOAA Climate.gov — ENSO](https://www.climate.gov/enso)
+- [WMO — El Niño / La Niña](https://wmo.int/themes/el-nino-la-nina-phenomena)
+- Contornos de países: [world.geo.json](https://github.com/johan/world.geo.json), derivados de dados Natural Earth de domínio público.
 
 ## Estrutura
 
-- index.html — conteúdo e estrutura semântica;
-- styles.css — identidade visual, responsividade e animações;
-- app.js — simulação, mapa e interações;
-- .nojekyll — publicação direta dos arquivos estáticos.
-
-## Fontes científicas
-
-- NOAA Ocean Service — What are El Niño and La Niña?
-- NASA Science — El Niño
-- CPTEC/INPE — El Niño e La Niña
-- CEMADEN — monitoramento e alertas
-- Organização Meteorológica Mundial — El Niño/La Niña phenomena
-
-A simulação é conceitual. Ela representa mecanismos e tendências típicas e não
-deve ser interpretada como previsão meteorológica ou climática em tempo real.
+- `index.html` — narrativa e interface acessível.
+- `styles.css` — direção visual e layout responsivo.
+- `app.js` — renderer WebGL, shader, interação e linha do tempo.
+- `world.geo.json` — geometria local dos continentes.
+- `.nojekyll` — publicação direta no GitHub Pages.
