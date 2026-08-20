@@ -4,6 +4,10 @@
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+  const smoothstep = (edge0, edge1, value) => {
+    const amount = clamp((value - edge0) / (edge1 - edge0), 0, 1);
+    return amount * amount * (3 - 2 * amount);
+  };
 
   const canvas = $('#globe-canvas');
   const stageElement = $('#globe-stage');
@@ -44,9 +48,10 @@
     autoLayer: false,
     playStartedAt: 0,
     time: 0,
-    rotation: -2.74,
+    rotation: 2.62,
     tilt: -0.12,
     zoom: 0.91,
+    followPhenomenon: true,
     dragging: false,
     pointerX: 0,
     pointerY: 0,
@@ -358,10 +363,6 @@
     rainValue.textContent = phase.rain;
     phenomenonKicker.textContent = phaseNumber === 0 ? 'CONDIÇÃO NEUTRA' : `FASE 0${phaseNumber + 1} · ${phase.kicker}`;
     phenomenonAction.textContent = phase.action;
-    ensoOverlay.style.setProperty('--enso', state.progress.toFixed(3));
-    ensoOverlay.style.setProperty('--front-x', `${27 + state.progress * 47}%`);
-    ensoOverlay.style.setProperty('--convection-x', `${32 + state.progress * 32}%`);
-    ensoOverlay.style.setProperty('--wind-opacity', String(Math.max(.12, 1 - state.progress * .86)));
     ensoOverlay.className = `enso-story-overlay phase-${phaseNumber}`;
 
     playLabel.textContent = state.running ? 'Pausar fenômeno' : (state.progress > 0.97 ? 'Repetir o fenômeno' : 'Iniciar o fenômeno');
@@ -380,7 +381,9 @@
     if (fromUser) {
       state.running = false;
       state.autoLayer = false;
+      state.followPhenomenon = true;
     }
+    updateCameraForProgress();
     state.dirty = true;
     updateInterface();
   }
@@ -403,9 +406,19 @@
     return 0;
   }
 
+  function updateCameraForProgress() {
+    if (!state.followPhenomenon) return;
+    const eventStrength = smoothstep(.04, .74, state.progress);
+    state.rotation = 2.62 + 1.62 * eventStrength;
+    state.tilt = -0.12 + eventStrength * 0.08;
+    state.zoom = 0.91 + Math.sin(eventStrength * Math.PI) * 0.055;
+    state.dirty = true;
+  }
+
   function advanceStory(now) {
     if (state.running && !state.motionPaused) {
       state.progress = clamp((now - state.playStartedAt) / 14000, 0, 1);
+      updateCameraForProgress();
       if (state.autoLayer) setLayer(cinematicLayer(state.progress));
       if (state.progress >= 1) {
         state.progress = 1;
@@ -488,7 +501,7 @@
         if (state.visible && !document.hidden) {
           if (!state.motionPaused) {
             state.time += delta;
-            if (!state.dragging && !state.running) state.rotation += delta * 0.018;
+            if (!state.dragging && !state.running && !state.followPhenomenon) state.rotation += delta * 0.018;
           }
 
           resizeCanvas(gl);
@@ -534,9 +547,8 @@
     state.autoLayer = starting;
     if (starting) {
       state.playStartedAt = performance.now() - state.progress * 14000;
-      state.rotation = -2.74;
-      state.tilt = -0.12;
-      state.zoom = 0.91;
+      state.followPhenomenon = true;
+      updateCameraForProgress();
       setLayer(cinematicLayer(state.progress));
     }
     if (state.running && state.motionPaused) {
@@ -563,6 +575,7 @@
 
   stageElement.addEventListener('pointerdown', (event) => {
     if (event.target.closest('button')) return;
+    state.followPhenomenon = false;
     state.dragging = true;
     state.moved = false;
     state.pointerX = event.clientX;
@@ -596,10 +609,8 @@
   }, { passive: false });
 
   stageElement.addEventListener('dblclick', () => {
-    state.rotation = -2.74;
-    state.tilt = -0.12;
-    state.zoom = 0.91;
-    state.dirty = true;
+    state.followPhenomenon = true;
+    updateCameraForProgress();
   });
 
   const revealObserver = 'IntersectionObserver' in window
