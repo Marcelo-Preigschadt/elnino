@@ -42,6 +42,7 @@
     motionPaused: reduceMotion,
     layer: 0,
     autoLayer: false,
+    playStartedAt: 0,
     time: 0,
     rotation: -2.74,
     tilt: -0.12,
@@ -402,12 +403,9 @@
     return 0;
   }
 
-  let lastStoryFrame = performance.now();
   function advanceStory(now) {
-    const delta = Math.min(.05, Math.max(0, (now - lastStoryFrame) / 1000));
-    lastStoryFrame = now;
     if (state.running && !state.motionPaused) {
-      state.progress += delta / 14;
+      state.progress = clamp((now - state.playStartedAt) / 14000, 0, 1);
       if (state.autoLayer) setLayer(cinematicLayer(state.progress));
       if (state.progress >= 1) {
         state.progress = 1;
@@ -535,6 +533,7 @@
     state.running = starting;
     state.autoLayer = starting;
     if (starting) {
+      state.playStartedAt = performance.now() - state.progress * 14000;
       state.rotation = -2.74;
       state.tilt = -0.12;
       state.zoom = 0.91;
