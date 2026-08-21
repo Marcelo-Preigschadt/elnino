@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#041217">
-  <meta name="description" content="Uma experiência interativa sobre como o El Niño reorganiza o oceano, a atmosfera e o risco climático.">
-  <title>El Niño — O oceano muda. O planeta sente.</title>
-  <link rel="stylesheet" href="styles.css?v=3.2.0">
-  <script src="app.js?v=3.2.0" defer></script>
+  <meta name="description" content="Uma experiência interativa sobre como o El Niño nasce no Pacífico e muda o risco de chuva, enchentes e temporais no Rio Grande do Sul.">
+  <title>El Niño no Rio Grande do Sul — do Pacífico ao nosso território</title>
+  <link rel="stylesheet" href="styles.css?v=4.0.0">
+  <script src="app.js?v=4.0.0" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#experiencia">Pular para a experiência</a>
@@ -20,7 +20,7 @@
     </a>
     <nav aria-label="Navegação principal">
       <a href="#fenomeno">O fenômeno</a>
-      <a href="#impactos">Impactos</a>
+      <a href="#impactos">No Rio Grande do Sul</a>
       <a href="#agir">Como agir</a>
     </nav>
     <button class="header-control" id="motion-toggle" type="button" aria-pressed="false">
@@ -34,20 +34,20 @@
       <div class="hero-copy">
         <p class="eyebrow"><span></span> O PACÍFICO DÁ O PRIMEIRO SINAL</p>
         <h1 id="hero-title">O oceano muda.<br><em>O planeta sente.</em></h1>
-        <p class="hero-lead">Gire o globo, avance no tempo e veja uma faixa de água quente reorganizar ventos, chuva e risco climático a milhares de quilômetros.</p>
+        <p class="hero-lead">Acompanhe o sinal nascer no Pacífico, alterar a atmosfera e chegar ao Rio Grande do Sul, onde muda o risco de chuva persistente, enchentes e tempestades severas.</p>
 
         <div class="hero-actions">
           <button class="primary-button" id="play-button" type="button">
             <span class="play-symbol" aria-hidden="true">▶</span>
             <span class="play-label">Iniciar o fenômeno</span>
           </button>
-          <a class="text-link" href="#fenomeno">Entender a ciência <span aria-hidden="true">↓</span></a>
+          <a class="text-link" href="#fenomeno">Entender o caminho <span aria-hidden="true">↓</span></a>
         </div>
 
         <div class="hero-facts" aria-label="Fatos principais">
           <div><strong>Pacífico tropical</strong><span>onde o sinal começa</span></div>
           <div><strong>Meses</strong><span>não um evento de um dia</span></div>
-          <div><strong>Escala global</strong><span>impactos por teleconexões</span></div>
+          <div><strong>Destino: RS</strong><span>o foco desta experiência</span></div>
         </div>
       </div>
 
@@ -69,6 +69,10 @@
             <div class="phenomenon-caption">
               <small id="phenomenon-kicker">CONDIÇÃO NEUTRA</small>
               <strong id="phenomenon-action">Alísios empurram o calor para oeste</strong>
+            </div>
+            <div class="rs-focus-marker">
+              <i></i>
+              <span>RIO GRANDE DO SUL</span>
             </div>
           </div>
 
@@ -99,7 +103,7 @@
         <div class="timeline">
           <div class="timeline-top"><span>EVOLUÇÃO DO FENÔMENO</span><output id="timeline-output" for="timeline-range">Fase neutra</output></div>
           <input id="timeline-range" type="range" min="0" max="100" value="0" aria-label="Avançar a evolução do El Niño">
-          <div class="timeline-marks" aria-hidden="true"><span>Neutro</span><span>Ventos cedem</span><span>Calor avança</span><span>Chuva migra</span><span>Impactos</span></div>
+          <div class="timeline-marks" aria-hidden="true"><span>Neutro</span><span>Ventos cedem</span><span>Calor avança</span><span>Chuva migra</span><span>Chegada ao RS</span></div>
         </div>
       </div>
     </section>
@@ -132,45 +136,70 @@
       </div>
     </section>
 
+    <section class="route-section" aria-labelledby="route-title">
+      <div class="route-copy reveal">
+        <p class="eyebrow"><span></span> DO PACÍFICO AO NOSSO TERRITÓRIO</p>
+        <h2 id="route-title">O fenômeno é distante.<br><em>O impacto pode ser local.</em></h2>
+      </div>
+      <ol class="risk-route reveal" aria-label="Caminho do El Niño até o Rio Grande do Sul">
+        <li><span>01</span><strong>Pacífico aquece</strong><small>A água superficial fica acima da média.</small></li>
+        <li><span>02</span><strong>Atmosfera responde</strong><small>Ventos e áreas de chuva se reorganizam.</small></li>
+        <li><span>03</span><strong>Circulação muda</strong><small>Jatos e frentes podem favorecer chuva no Sul.</small></li>
+        <li><span>04</span><strong>Risco se acumula</strong><small>Solo saturado e rios altos ampliam os danos.</small></li>
+      </ol>
+    </section>
+
     <section class="impact-section" id="impactos" aria-labelledby="impact-title">
       <div class="impact-heading reveal">
-        <p class="eyebrow"><span></span> TELECONEXÕES</p>
-        <h2 id="impact-title">Um oceano.<br><em>Muitos efeitos possíveis.</em></h2>
-        <p>El Niño muda probabilidades — não determina sozinho cada tempestade, seca ou onda de calor.</p>
+        <p class="eyebrow"><span></span> RIO GRANDE DO SUL EM FOCO</p>
+        <h2 id="impact-title">Quando chove demais,<br><em>o território responde.</em></h2>
+        <p>Os registros abaixo são reais. Eles mostram como chuva persistente, tempestades severas e ventos extremos podem atingir o estado — e por que previsão, infraestrutura e alerta importam.</p>
       </div>
 
-      <div class="impact-grid">
-        <article class="impact-card rain-card reveal">
-          <span class="card-number">01</span>
-          <div class="impact-symbol rain-symbol" aria-hidden="true"><i></i><i></i><i></i></div>
-          <p class="card-kicker">SUL DO BRASIL</p>
-          <h3>Chuva acima da média pode ganhar força</h3>
-          <p>Aumenta o risco de enchentes, deslizamentos e perdas no campo quando outros fatores também favorecem extremos.</p>
-          <strong>PREPARAR: drenagem, alertas e rotas seguras</strong>
+      <div class="impact-gallery">
+        <article class="evidence-card evidence-card-wide reveal">
+          <figure>
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/05.05.2024_-_Sobrevoo_das_%C3%A1reas_afetadas_pelas_chuvas_na_Regi%C3%A3o_metropolitana_de_Porto_Alegre.jpg/1280px-05.05.2024_-_Sobrevoo_das_%C3%A1reas_afetadas_pelas_chuvas_na_Regi%C3%A3o_metropolitana_de_Porto_Alegre.jpg" alt="Vista aérea de áreas alagadas na Região Metropolitana de Porto Alegre em maio de 2024" loading="lazy" decoding="async">
+            <figcaption>Região Metropolitana de Porto Alegre, 5 mai. 2024 · Ricardo Stuckert/PR · CC BY-SA 2.0</figcaption>
+          </figure>
+          <div class="evidence-copy">
+            <span class="card-number">01 · ENCHENTES</span>
+            <h3>A chuva deixa de ser apenas tempo ruim.</h3>
+            <p>Quando episódios persistem, o solo perde capacidade de absorção, arroios transbordam e grandes bacias recebem água de muitas cidades ao mesmo tempo. O resultado pode ser alagamento urbano, inundação e deslizamento.</p>
+            <a href="https://commons.wikimedia.org/wiki/File:05.05.2024_-_Sobrevoo_das_%C3%A1reas_afetadas_pelas_chuvas_na_Regi%C3%A3o_metropolitana_de_Porto_Alegre.jpg" target="_blank" rel="noopener">Ver registro e licença ↗</a>
+          </div>
         </article>
 
-        <article class="impact-card drought-card reveal">
-          <span class="card-number">02</span>
-          <div class="impact-symbol sun-symbol" aria-hidden="true"><i></i></div>
-          <p class="card-kicker">NORTE E NORDESTE</p>
-          <h3>Seca e calor podem se intensificar</h3>
-          <p>Em partes da região, a chance de chuva abaixo da média cresce, pressionando água, saúde, energia e agricultura.</p>
-          <strong>PREPARAR: água, saúde e manejo do fogo</strong>
+        <article class="evidence-card reveal">
+          <figure>
+            <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/Storms_over_South_America_on_2_May_2024.png" alt="Imagem de satélite das tempestades sobre o sul da América do Sul em 2 de maio de 2024" loading="lazy" decoding="async">
+            <figcaption>Tempestades sobre o Sul, 2 mai. 2024 · NASA Worldview · domínio público</figcaption>
+          </figure>
+          <div class="evidence-copy">
+            <span class="card-number">02 · CHUVA E TEMPORAIS</span>
+            <h3>O risco vem da combinação.</h3>
+            <p>El Niño pode favorecer chuva acima da média no RS. Um extremo específico também depende de frentes, jatos de baixos níveis, bloqueios, umidade disponível e das condições do Atlântico.</p>
+            <a href="https://commons.wikimedia.org/wiki/File:Storms_over_South_America_on_2_May_2024.png" target="_blank" rel="noopener">Ver imagem NASA ↗</a>
+          </div>
         </article>
 
-        <article class="impact-card ocean-card reveal">
-          <span class="card-number">03</span>
-          <div class="impact-symbol fish-symbol" aria-hidden="true"><i></i></div>
-          <p class="card-kicker">PACÍFICO LESTE</p>
-          <h3>A cadeia marinha perde nutrientes</h3>
-          <p>Com menos ressurgência, o fitoplâncton pode diminuir e afetar peixes, aves, pesca e renda costeira.</p>
-          <strong>PREPARAR: monitoramento e gestão adaptativa</strong>
+        <article class="evidence-card reveal">
+          <figure>
+            <img src="https://www.estado.rs.gov.br/upload/recortes/201706/25023209_368010_GD.jpg" alt="Equipes da Defesa Civil avaliam danos deixados por tornado em Canela, no Rio Grande do Sul" loading="lazy" decoding="async">
+            <figcaption>Canela, jul. 2010 · Itamar Aguiar/Palácio Piratini</figcaption>
+          </figure>
+          <div class="evidence-copy">
+            <span class="card-number">03 · TORNADOS</span>
+            <h3>Possível, mas não automático.</h3>
+            <p>El Niño não “cria um tornado” sozinho. Tornados são fenômenos locais, formados em tempestades com forte instabilidade e mudança do vento com a altura. O estado já registra esse tipo de dano.</p>
+            <a href="https://www.estado.rs.gov.br/prefeito-de-canela-destaca-a-acao-imediata-da-defesa-civil-apos-tornado" target="_blank" rel="noopener">Ver registro oficial ↗</a>
+          </div>
         </article>
       </div>
 
       <aside class="context-note reveal">
-        <strong>Clima não é destino.</strong>
-        <p>O aquecimento global eleva a temperatura de fundo sobre a qual El Niño atua. O impacto real depende da intensidade do evento, da estação, da região e da vulnerabilidade local.</p>
+        <strong>El Niño altera a chance, não escreve o roteiro sozinho.</strong>
+        <p>A intensidade do fenômeno, a estação do ano e outros sistemas atmosféricos definem a chuva. Já a ocupação do território, a drenagem, a proteção de encostas, os alertas e a resposta pública ajudam a definir quanto essa chuva vira desastre.</p>
       </aside>
     </section>
 
@@ -178,13 +207,14 @@
       <div class="action-copy reveal">
         <p class="eyebrow light"><span></span> DA INFORMAÇÃO À AÇÃO</p>
         <h2 id="action-title">Previsão só protege<br>quando vira <em>decisão.</em></h2>
-        <p>Acompanhe fontes oficiais, conheça os riscos do seu território e combine antes o que fazer em caso de alerta.</p>
+        <p>No Rio Grande do Sul, acompanhe a Defesa Civil, conheça os riscos do seu município e combine antes o que fazer em caso de alerta.</p>
       </div>
 
       <div class="action-list reveal">
         <div><span>01</span><p><strong>Ative alertas oficiais</strong>Envie o CEP por SMS para <b>40199</b> e receba avisos da Defesa Civil.</p></div>
-        <div><span>02</span><p><strong>Conheça seu risco local</strong>Identifique pontos de alagamento, encostas, rotas seguras e abrigos.</p></div>
-        <div><span>03</span><p><strong>Planeje antes do extremo</strong>Separe documentos, medicamentos, contatos e uma pequena reserva de água.</p></div>
+        <div><span>02</span><p><strong>Não atravesse áreas alagadas</strong>A correnteza, buracos e contaminação podem não estar visíveis. Procure uma rota segura.</p></div>
+        <div><span>03</span><p><strong>Planeje antes do extremo</strong>Separe documentos, medicamentos, contatos, lanterna e uma pequena reserva de água.</p></div>
+        <div><span>04</span><p><strong>Em emergência</strong>Ligue para o Corpo de Bombeiros no <b>193</b>. Siga as orientações oficiais para deixar áreas de risco.</p></div>
       </div>
     </section>
 
@@ -195,9 +225,9 @@
       </div>
       <div class="source-links">
         <a href="https://science.nasa.gov/earth/explore/el-nino/" target="_blank" rel="noopener"><span>NASA Earth Science</span><strong>El Niño explicado ↗</strong></a>
-        <a href="https://svs.gsfc.nasa.gov/5213/" target="_blank" rel="noopener"><span>NASA Scientific Visualization Studio</span><strong>Oceano e atmosfera ↗</strong></a>
-        <a href="https://www.climate.gov/enso" target="_blank" rel="noopener"><span>NOAA Climate.gov</span><strong>ENSO em detalhes ↗</strong></a>
-        <a href="https://wmo.int/themes/el-nino-la-nina-phenomena" target="_blank" rel="noopener"><span>Organização Meteorológica Mundial</span><strong>Impactos globais ↗</strong></a>
+        <a href="https://portal.inmet.gov.br/noticias/el-ni%C3%B1o-o-que-esperar-e-como-isso-pode-afetar-o-rio-grande-do-sul" target="_blank" rel="noopener"><span>INMET</span><strong>El Niño e o Rio Grande do Sul ↗</strong></a>
+        <a href="https://defesacivil.rs.gov.br/avisos-e-alertas" target="_blank" rel="noopener"><span>Defesa Civil RS</span><strong>Avisos e alertas oficiais ↗</strong></a>
+        <a href="https://www.gov.br/pt-br/servicos/solicitar-cadastro-para-recebimento-de-avisos-e-alertas-de-desastres" target="_blank" rel="noopener"><span>Defesa Civil Nacional</span><strong>Cadastro gratuito no 40199 ↗</strong></a>
       </div>
       <p class="model-note">A animação é uma representação educativa baseada no mecanismo físico do fenômeno. Não exibe observações em tempo real nem substitui previsões oficiais.</p>
     </section>
