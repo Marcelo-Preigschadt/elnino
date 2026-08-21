@@ -48,7 +48,7 @@
     { kicker: 'ATMOSFERA', title: 'Os ventos alísios perdem força', label: 'Ventos cedem', wind: 'enfraquecendo', rain: 'em trânsito', action: 'O motor atmosférico começa a ceder' },
     { kicker: 'OCEANO', title: 'O calor avança para leste', label: 'Calor avança', wind: 'fracos', rain: 'centro', action: 'Uma faixa quente atravessa o Pacífico' },
     { kicker: 'CONVECÇÃO', title: 'A chuva acompanha a água quente', label: 'Chuva migra', wind: 'alterados', rain: 'centro-leste', action: 'Nuvens e chuva seguem a água aquecida' },
-    { kicker: 'RIO GRANDE DO SUL', title: 'A circulação muda o risco no Sul', label: 'Chegada ao RS', wind: 'circulação alterada', rain: 'mais provável', action: 'A câmera acompanha o sinal até o Rio Grande do Sul' }
+    { kicker: 'RIO GRANDE DO SUL', title: 'A circulação muda o risco no Sul', label: 'Impacto no RS', wind: 'circulação alterada', rain: 'mais provável', action: 'Mais umidade e sistemas persistentes elevam o risco de chuva no Sul' }
   ];
 
   const state = {

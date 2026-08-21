@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#041217">
-  <meta name="description" content="Uma experiência interativa sobre como o El Niño nasce no Pacífico e muda o risco de chuva, enchentes e temporais no Rio Grande do Sul.">
+  <meta name="description" content="Como o El Niño nasce no Pacífico e altera o risco de chuva, enchentes e temporais no Rio Grande do Sul.">
   <title>El Niño no Rio Grande do Sul — do Pacífico ao nosso território</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=7.0.0">
-  <script src="app.js?v=7.0.0" defer></script>
+  <link rel="stylesheet" href="styles.css?v=7.1.0">
+  <script src="app.js?v=7.1.0" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#experiencia">Pular para a experiência</a>
@@ -56,16 +56,16 @@
 
       <div class="experience-panel">
         <div class="panel-head">
-          <div><span class="live-dot" aria-hidden="true"></span><span>MODELO VISUAL INTERATIVO</span></div>
-          <span>14 segundos · Pacífico → Rio Grande do Sul</span>
+          <div><span class="live-dot" aria-hidden="true"></span><span>EVOLUÇÃO DO EL NIÑO</span></div>
+          <span>PACÍFICO → CIRCULAÇÃO → RIO GRANDE DO SUL</span>
         </div>
 
         <div class="globe-stage" id="globe-stage">
-          <canvas id="globe-canvas" aria-label="Globo interativo mostrando a evolução térmica do El Niño"></canvas>
-          <div class="globe-loading" id="globe-loading" role="status"><span></span>Preparando o oceano</div>
+          <canvas id="globe-canvas" aria-label="Evolução térmica do El Niño entre o Pacífico e o Rio Grande do Sul"></canvas>
+          <div class="globe-loading" id="globe-loading" role="status"><span></span>PACÍFICO TROPICAL</div>
           <div class="webgl-fallback" id="webgl-fallback" hidden>
-            <strong>Visualização simplificada</strong>
-            <span>A aceleração gráfica deste navegador não está disponível.</span>
+            <strong>El Niño e o Sul do Brasil</strong>
+            <span>O fenômeno pode favorecer chuva acima da média e episódios persistentes no Rio Grande do Sul.</span>
           </div>
 
           <div class="enso-story-overlay phase-0" id="enso-story-overlay" aria-hidden="true">
@@ -87,12 +87,12 @@
           </div>
 
           <div class="data-hud">
-            <div><span>Anomalia ilustrativa</span><strong id="anomaly-value">+0,0 °C</strong></div>
+            <div><span>Anomalia térmica</span><strong id="anomaly-value">+0,0 °C</strong></div>
             <div><span>Ventos alísios</span><strong id="wind-value">normais</strong></div>
             <div><span>Convecção</span><strong id="rain-value">oeste</strong></div>
           </div>
 
-          <div class="layer-controls" role="group" aria-label="Camada visual">
+          <div class="layer-controls" role="group" aria-label="Variável climática">
             <button class="layer-button active" type="button" data-layer="0" aria-pressed="true"><i class="heat-icon"></i> Térmica</button>
             <button class="layer-button" type="button" data-layer="1" aria-pressed="false"><i class="wind-icon"></i> Ventos</button>
             <button class="layer-button" type="button" data-layer="2" aria-pressed="false"><i class="rain-icon"></i> Chuva</button>
@@ -172,7 +172,7 @@
               <text x="900" y="326" text-anchor="middle" class="label-water small">RESSURGÊNCIA REDUZIDA</text>
             </g>
           </svg>
-          <figcaption>Representação conceitual · proporções verticais ampliadas para leitura</figcaption>
+          <figcaption>Água quente avança para leste, a termoclina se aprofunda e a ressurgência enfraquece.</figcaption>
         </figure>
 
         <ol class="mechanism-steps">
@@ -315,7 +315,7 @@
     <section class="sources-section" aria-labelledby="sources-title">
       <div>
         <p class="eyebrow"><span></span> BASE CIENTÍFICA</p>
-        <h2 id="sources-title">Explore além da visualização.</h2>
+        <h2 id="sources-title">Consulte as fontes científicas.</h2>
       </div>
       <div class="source-links">
         <a href="https://science.nasa.gov/earth/explore/el-nino/" target="_blank" rel="noopener"><span>NASA Earth Science</span><strong>El Niño explicado ↗</strong></a>
@@ -324,7 +324,7 @@
         <a href="https://defesacivil.rs.gov.br/avisos-e-alertas" target="_blank" rel="noopener"><span>Defesa Civil RS</span><strong>Avisos e alertas oficiais ↗</strong></a>
         <a href="https://www.gov.br/pt-br/servicos/solicitar-cadastro-para-recebimento-de-avisos-e-alertas-de-desastres" target="_blank" rel="noopener"><span>Defesa Civil Nacional</span><strong>Cadastro gratuito no 40199 ↗</strong></a>
       </div>
-      <p class="model-note">A animação é uma representação educativa baseada no mecanismo físico do fenômeno. Não exibe observações em tempo real nem substitui previsões oficiais.</p>
+      <p class="model-note">El Niño altera probabilidades climáticas em escala sazonal. A intensidade de cada episódio de chuva depende também de frentes, ciclones, jatos atmosféricos, umidade disponível e condições do Atlântico.</p>
     </section>
   </main>
 
@@ -334,6 +334,6 @@
     <a href="#topo">Voltar ao topo ↑</a>
   </footer>
 
-  <noscript><div class="noscript">Ative o JavaScript para explorar o globo climático interativo.</div></noscript>
+  <noscript><div class="noscript">El Niño reorganiza a circulação atmosférica e pode favorecer chuva acima da média no Rio Grande do Sul.</div></noscript>
 </body>
 </html>
