@@ -9,8 +9,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=6.0.0">
-  <script src="app.js?v=6.0.0" defer></script>
+  <link rel="stylesheet" href="styles.css?v=7.0.0">
+  <script src="app.js?v=7.0.0" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#experiencia">Pular para a experiência</a>
@@ -73,9 +73,9 @@
               <small id="phenomenon-kicker">CONDIÇÃO NEUTRA</small>
               <strong id="phenomenon-action">Alísios empurram o calor para oeste</strong>
             </div>
-            <div class="rs-focus-marker">
+            <div class="rs-focus-marker" id="rs-focus-marker">
               <i></i>
-              <span><b>RIO GRANDE DO SUL</b><small>30°S · 53°W</small></span>
+              <span><b>PORTO ALEGRE · RS</b><small>30,03° S · 51,23° O</small></span>
             </div>
           </div>
 
@@ -188,6 +188,7 @@
       <div class="route-copy reveal">
         <p class="eyebrow"><span></span> DO PACÍFICO AO NOSSO TERRITÓRIO</p>
         <h2 id="route-title">O fenômeno é distante.<br><em>O impacto pode ser local.</em></h2>
+        <p class="route-lead">Não existe uma “onda de calor” viajando até o RS. O que atravessa o planeta é uma mudança na circulação: o Pacífico reorganiza ventos, jatos e zonas de chuva; no Sul, isso favorece mais transporte de umidade e sistemas meteorológicos persistentes.</p>
       </div>
       <ol class="risk-route reveal" aria-label="Caminho do El Niño até o Rio Grande do Sul">
         <li><span>01</span><strong>Pacífico aquece</strong><small>A água superficial fica acima da média.</small></li>
@@ -201,7 +202,13 @@
       <div class="impact-heading reveal">
         <p class="eyebrow"><span></span> RIO GRANDE DO SUL EM FOCO</p>
         <h2 id="impact-title">Quando chove demais,<br><em>o território responde.</em></h2>
-        <p>Os registros abaixo são reais. Eles mostram como chuva persistente, tempestades severas e ventos extremos podem atingir o estado — e por que previsão, infraestrutura e alerta importam.</p>
+        <p>Os registros abaixo conectam três escalas: a atmosfera vista por satélite, a água acumulada nas bacias e o dano observado nas cidades. El Niño aumenta a probabilidade; frentes, ciclones, umidade e vulnerabilidade territorial definem cada episódio.</p>
+      </div>
+
+      <div class="impact-metrics reveal" aria-label="Dados observados durante o El Niño de 2023 e 2024">
+        <div><strong>247,1 mm</strong><span>em 24 horas em Cruz Alta, em 4 set. 2023</span></div>
+        <div><strong>2.840 mm</strong><span>acumulados em Passo Fundo durante 2023</span></div>
+        <div><strong>+922 mm</strong><span>acima da média anual em Passo Fundo</span></div>
       </div>
 
       <div class="impact-gallery">
@@ -243,6 +250,45 @@
             <a href="https://www.estado.rs.gov.br/prefeito-de-canela-destaca-a-acao-imediata-da-defesa-civil-apos-tornado" target="_blank" rel="noopener">Ver registro oficial ↗</a>
           </div>
         </article>
+
+        <article class="evidence-card evidence-card-science reveal">
+          <figure>
+            <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/Storms_over_South_America_on_2_May_2024.png" alt="Imagem de satélite mostrando uma extensa faixa de nuvens sobre o Rio Grande do Sul em 2 de maio de 2024" loading="lazy" decoding="async">
+            <figcaption>Tempestades sobre o Sul da América, 2 mai. 2024 · NASA Worldview · domínio público</figcaption>
+          </figure>
+          <div class="evidence-copy">
+            <span class="card-number">04 · ESCALA ATMOSFÉRICA</span>
+            <h3>O satélite mostra o sistema; não apenas a chuva.</h3>
+            <p>A faixa branca é uma extensa cobertura de nuvens associada à instabilidade sobre o Sul. Na fase final do El Niño forte, o jato subtropical intensificado, a umidade transportada em baixos níveis e frentes quase estacionárias sustentaram chuva por vários dias.</p>
+            <a href="https://commons.wikimedia.org/wiki/File:Storms_over_South_America_on_2_May_2024.png" target="_blank" rel="noopener">Ver imagem e licença ↗</a>
+          </div>
+        </article>
+
+        <article class="evidence-card evidence-card-science reveal">
+          <figure>
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Brazilflooding_tmo_2023170_lrg.jpg/1280px-Brazilflooding_tmo_2023170_lrg.jpg" alt="Imagem de satélite mostrando água barrenta nos rios e na Lagoa dos Patos após as chuvas de junho de 2023" loading="lazy" decoding="async">
+            <figcaption>Cheias e sedimentos no leste do RS, 19 jun. 2023 · NASA Earth Observatory · domínio público</figcaption>
+          </figure>
+          <div class="evidence-copy">
+            <span class="card-number">05 · BACIAS HIDROGRÁFICAS</span>
+            <h3>A água de muitas cidades converge para a mesma bacia.</h3>
+            <p>Na imagem, rios carregados de sedimentos aparecem marrons e lançam água turva na Lagoa dos Patos. O perigo cresce quando chuva sucessiva cai nas cabeceiras, propaga uma onda de cheia e encontra solo já saturado rio abaixo.</p>
+            <a href="https://commons.wikimedia.org/wiki/File:Brazilflooding_tmo_2023170_lrg.jpg" target="_blank" rel="noopener">Ver imagem e licença ↗</a>
+          </div>
+        </article>
+
+        <article class="evidence-card evidence-card-wide evidence-card-observation reveal">
+          <figure>
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Rio_Grande_do_Sul_Before_and_After_Flooding_Rains_%28CIRA_2024-05-06%29.png/1280px-Rio_Grande_do_Sul_Before_and_After_Flooding_Rains_%28CIRA_2024-05-06%29.png" alt="Comparação por satélite evidenciando a expansão das áreas inundadas próximas a Porto Alegre em maio de 2024" loading="lazy" decoding="async">
+            <figcaption>Expansão da inundação na Região Metropolitana, 6 mai. 2024 · NOAA-21/VIIRS · domínio público</figcaption>
+          </figure>
+          <div class="evidence-copy">
+            <span class="card-number">06 · ANTES E DEPOIS</span>
+            <h3>O volume acumulado redesenha a paisagem.</h3>
+            <p>A comparação orbital evidencia a ampliação da lâmina d’água ao redor do Guaíba e da Região Metropolitana. Esse é o encadeamento decisivo: precipitação persistente → rios acima da cota → extravasamento → inundação de áreas urbanas e rurais.</p>
+            <a href="https://commons.wikimedia.org/wiki/File:Rio_Grande_do_Sul_Before_and_After_Flooding_Rains_%28CIRA_2024-05-06%29.png" target="_blank" rel="noopener">Ver imagem e licença ↗</a>
+          </div>
+        </article>
       </div>
 
       <aside class="context-note reveal">
@@ -274,6 +320,7 @@
       <div class="source-links">
         <a href="https://science.nasa.gov/earth/explore/el-nino/" target="_blank" rel="noopener"><span>NASA Earth Science</span><strong>El Niño explicado ↗</strong></a>
         <a href="https://portal.inmet.gov.br/noticias/el-ni%C3%B1o-o-que-esperar-e-como-isso-pode-afetar-o-rio-grande-do-sul" target="_blank" rel="noopener"><span>INMET</span><strong>El Niño e o Rio Grande do Sul ↗</strong></a>
+        <a href="https://portal.inmet.gov.br/noticias/el-ni%C3%B1o-saiba-como-foi-a-atua%C3%A7%C3%A3o-do-fen%C3%B4meno-no-brasil" target="_blank" rel="noopener"><span>INMET · dados observados</span><strong>El Niño 2023–2024 ↗</strong></a>
         <a href="https://defesacivil.rs.gov.br/avisos-e-alertas" target="_blank" rel="noopener"><span>Defesa Civil RS</span><strong>Avisos e alertas oficiais ↗</strong></a>
         <a href="https://www.gov.br/pt-br/servicos/solicitar-cadastro-para-recebimento-de-avisos-e-alertas-de-desastres" target="_blank" rel="noopener"><span>Defesa Civil Nacional</span><strong>Cadastro gratuito no 40199 ↗</strong></a>
       </div>

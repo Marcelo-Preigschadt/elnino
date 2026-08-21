@@ -9,10 +9,14 @@
     return amount * amount * (3 - 2 * amount);
   };
   const DEG_TO_RAD = Math.PI / 180;
+  const RS_LOCATION = Object.freeze({
+    longitude: -51.23 * DEG_TO_RAD,
+    latitude: -30.03 * DEG_TO_RAD
+  });
   const RS_VIEW = Object.freeze({
-    rotation: (360 - 53.2) * DEG_TO_RAD,
-    tilt: -30 * DEG_TO_RAD,
-    zoom: 1.08
+    rotation: (360 - 58) * DEG_TO_RAD,
+    tilt: -18 * DEG_TO_RAD,
+    zoom: 0.94
   });
 
   const canvas = $('#globe-canvas');
@@ -36,6 +40,7 @@
   const ensoOverlay = $('#enso-story-overlay');
   const phenomenonKicker = $('#phenomenon-kicker');
   const phenomenonAction = $('#phenomenon-action');
+  const rsFocusMarker = $('#rs-focus-marker');
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const phases = [
@@ -171,11 +176,24 @@
       float lat = asin(clamp(worldNormal.y, -1.0, 1.0));
       vec2 geoUv = vec2(fract(lon / TAU + 0.5), clamp(lat / PI + 0.5, 0.001, 0.999));
 
-      float land = texture2D(uLand, geoUv).r;
-      float landE = texture2D(uLand, geoUv + vec2(uLandTexel.x, 0.0)).r;
-      float landW = texture2D(uLand, geoUv - vec2(uLandTexel.x, 0.0)).r;
-      float landN = texture2D(uLand, geoUv + vec2(0.0, uLandTexel.y)).r;
-      float landS = texture2D(uLand, geoUv - vec2(0.0, uLandTexel.y)).r;
+      vec4 landSample = texture2D(uLand, geoUv);
+      vec4 landSampleE = texture2D(uLand, geoUv + vec2(uLandTexel.x, 0.0));
+      vec4 landSampleW = texture2D(uLand, geoUv - vec2(uLandTexel.x, 0.0));
+      vec4 landSampleN = texture2D(uLand, geoUv + vec2(0.0, uLandTexel.y));
+      vec4 landSampleS = texture2D(uLand, geoUv - vec2(0.0, uLandTexel.y));
+      float land = max(landSample.r, landSample.g);
+      float landE = max(landSampleE.r, landSampleE.g);
+      float landW = max(landSampleW.r, landSampleW.g);
+      float landN = max(landSampleN.r, landSampleN.g);
+      float landS = max(landSampleS.r, landSampleS.g);
+      float rsMask = smoothstep(0.30, 0.70, landSample.g);
+      float rsBorder = clamp(
+        abs(rsMask - smoothstep(0.30, 0.70, landSampleE.g)) +
+        abs(rsMask - smoothstep(0.30, 0.70, landSampleW.g)) +
+        abs(rsMask - smoothstep(0.30, 0.70, landSampleN.g)) +
+        abs(rsMask - smoothstep(0.30, 0.70, landSampleS.g)),
+        0.0, 1.0
+      );
       float coastline = clamp(abs(land - landE) + abs(land - landW) + abs(land - landN) + abs(land - landS), 0.0, 1.0);
 
       float eventStrength = smoothstep(0.04, 0.74, uProgress);
@@ -249,6 +267,8 @@
       float rsCloudNoise = fbm(vec2(lon * 15.0 + uTime * 0.035, lat * 22.0 - uTime * 0.055));
       float rsClouds = smoothstep(0.48, 0.73, rsCloudNoise) * rsZone * rsReveal;
       float rsRainPulse = (0.55 + 0.45 * sin(uTime * 2.2 + lon * 19.0)) * rsZone * rsReveal;
+      color = mix(color, vec3(0.92, 0.25, 0.12), rsMask * rsReveal * 0.52);
+      color += vec3(1.0, 0.47, 0.25) * rsBorder * rsReveal * 0.78;
       color = mix(color, vec3(0.70, 0.90, 0.92), rsClouds * 0.72);
       color += vec3(0.10, 0.42, 0.55) * rsRainPulse * 0.18;
 
@@ -338,11 +358,17 @@
     context.fillStyle = '#000';
     context.fillRect(0, 0, textureCanvas.width, textureCanvas.height);
 
-    const response = await fetch('world.geo.json', { cache: 'force-cache' });
-    if (!response.ok) throw new Error(`Mapa local indisponível (${response.status})`);
-    const collection = await response.json();
-    context.fillStyle = '#fff';
+    const [response, rsResponse] = await Promise.all([
+      fetch('world.geo.json', { cache: 'force-cache' }),
+      fetch('rs.geo.json', { cache: 'force-cache' })
+    ]);
+    if (!response.ok) throw new Error(`Mapa mundial indisponível (${response.status})`);
+    if (!rsResponse.ok) throw new Error(`Malha do RS indisponível (${rsResponse.status})`);
+    const [collection, rsCollection] = await Promise.all([response.json(), rsResponse.json()]);
+    context.fillStyle = '#ff0000';
     collection.features.forEach((feature) => paintGeometry(context, feature.geometry, textureCanvas.width, textureCanvas.height));
+    context.fillStyle = '#00ff00';
+    rsCollection.features.forEach((feature) => paintGeometry(context, feature.geometry, textureCanvas.width, textureCanvas.height));
     return textureCanvas;
   }
 
@@ -358,6 +384,30 @@
     canvas.height = height;
     gl.viewport(0, 0, width, height);
     return true;
+  }
+
+  function updateRSMarkerProjection() {
+    if (!rsFocusMarker) return;
+    const width = stageElement.clientWidth;
+    const height = stageElement.clientHeight;
+    if (!width || !height) return;
+
+    const relativeLongitude = RS_LOCATION.longitude - state.rotation;
+    const cosLatitude = Math.cos(RS_LOCATION.latitude);
+    const worldX = cosLatitude * Math.sin(relativeLongitude);
+    const worldY = Math.sin(RS_LOCATION.latitude);
+    const worldZ = cosLatitude * Math.cos(relativeLongitude);
+    const cosTilt = Math.cos(state.tilt);
+    const sinTilt = Math.sin(state.tilt);
+    const viewY = cosTilt * worldY - sinTilt * worldZ;
+    const viewZ = sinTilt * worldY + cosTilt * worldZ;
+    const shortSide = Math.min(width, height);
+    const x = width * 0.5 + worldX * state.zoom * shortSide * 0.5;
+    const y = height * 0.5 - viewY * state.zoom * shortSide * 0.5;
+
+    rsFocusMarker.style.setProperty('--rs-x', `${x.toFixed(2)}px`);
+    rsFocusMarker.style.setProperty('--rs-y', `${y.toFixed(2)}px`);
+    rsFocusMarker.classList.toggle('off-globe', viewZ <= 0.08);
   }
 
   function updateInterface(force = false) {
@@ -379,6 +429,7 @@
     phenomenonAction.textContent = phase.action;
     const rsArrived = state.progress >= .985 && state.followPhenomenon;
     ensoOverlay.className = `enso-story-overlay phase-${phaseNumber}${rsArrived ? ' rs-arrived' : ''}`;
+    updateRSMarkerProjection();
 
     playLabel.textContent = state.running ? 'Pausar fenômeno' : (state.progress > 0.97 ? 'Repetir o fenômeno' : 'Iniciar o fenômeno');
     playSymbol.textContent = state.running ? 'Ⅱ' : '▶';
@@ -613,6 +664,7 @@
     state.pointerX = event.clientX;
     state.pointerY = event.clientY;
     state.dirty = true;
+    updateRSMarkerProjection();
   });
 
   const releasePointer = (event) => {
@@ -626,6 +678,7 @@
     event.preventDefault();
     state.zoom = clamp(state.zoom - event.deltaY * 0.0007, 0.72, 1.20);
     state.dirty = true;
+    updateRSMarkerProjection();
   }, { passive: false });
 
   stageElement.addEventListener('dblclick', () => {
@@ -658,7 +711,10 @@
   }
 
   document.addEventListener('visibilitychange', () => { state.dirty = true; });
-  window.addEventListener('resize', () => { state.dirty = true; }, { passive: true });
+  window.addEventListener('resize', () => {
+    state.dirty = true;
+    updateRSMarkerProjection();
+  }, { passive: true });
   canvas.addEventListener('webglcontextlost', (event) => {
     event.preventDefault();
     showFallback(new Error('O contexto gráfico foi interrompido pelo navegador.'));
