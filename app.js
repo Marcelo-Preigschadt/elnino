@@ -37,7 +37,7 @@
     { kicker: 'ATMOSFERA', title: 'Os ventos alísios perdem força', label: 'Ventos cedem', wind: 'enfraquecendo', rain: 'em trânsito', action: 'O motor atmosférico começa a ceder' },
     { kicker: 'OCEANO', title: 'O calor avança para leste', label: 'Calor avança', wind: 'fracos', rain: 'centro', action: 'Uma faixa quente atravessa o Pacífico' },
     { kicker: 'CONVECÇÃO', title: 'A chuva acompanha a água quente', label: 'Chuva migra', wind: 'alterados', rain: 'centro-leste', action: 'Nuvens e chuva seguem a água aquecida' },
-    { kicker: 'TELECONEXÕES', title: 'O efeito alcança outros continentes', label: 'Impactos remotos', wind: 'reorganizados', rain: 'redistribuída', action: 'A circulação global redistribui o risco' }
+    { kicker: 'RIO GRANDE DO SUL', title: 'A circulação muda o risco no Sul', label: 'Chegada ao RS', wind: 'circulação alterada', rain: 'mais provável', action: 'A câmera acompanha o sinal até o Rio Grande do Sul' }
   ];
 
   const state = {
@@ -238,6 +238,14 @@
       color += coastline * vec3(0.29, 0.56, 0.54) * 0.42;
       color = mix(color, vec3(0.31, 0.68, 0.66), grid * (1.0 - land * 0.58));
 
+      float rsReveal = smoothstep(0.80, 0.98, uProgress);
+      float rsZone = exp(-pow(wrapAngle(lon + 0.925) / 0.25, 2.0) - pow((lat + 0.52) / 0.18, 2.0));
+      float rsCloudNoise = fbm(vec2(lon * 15.0 + uTime * 0.035, lat * 22.0 - uTime * 0.055));
+      float rsClouds = smoothstep(0.48, 0.73, rsCloudNoise) * rsZone * rsReveal;
+      float rsRainPulse = (0.55 + 0.45 * sin(uTime * 2.2 + lon * 19.0)) * rsZone * rsReveal;
+      color = mix(color, vec3(0.70, 0.90, 0.92), rsClouds * 0.72);
+      color += vec3(0.10, 0.42, 0.55) * rsRainPulse * 0.18;
+
       vec3 lightDirection = normalize(vec3(-0.38, 0.32, 0.87));
       float diffuse = clamp(dot(viewNormal, lightDirection) * 0.56 + 0.54, 0.18, 1.0);
       float nightEdge = smoothstep(-0.22, 0.82, dot(viewNormal, lightDirection));
@@ -363,7 +371,7 @@
     rainValue.textContent = phase.rain;
     phenomenonKicker.textContent = phaseNumber === 0 ? 'CONDIÇÃO NEUTRA' : `FASE 0${phaseNumber + 1} · ${phase.kicker}`;
     phenomenonAction.textContent = phase.action;
-    ensoOverlay.className = `enso-story-overlay phase-${phaseNumber}`;
+    ensoOverlay.className = `enso-story-overlay phase-${phaseNumber}${state.progress >= .93 ? ' rs-arrived' : ''}`;
 
     playLabel.textContent = state.running ? 'Pausar fenômeno' : (state.progress > 0.97 ? 'Repetir o fenômeno' : 'Iniciar o fenômeno');
     playSymbol.textContent = state.running ? 'Ⅱ' : '▶';
@@ -409,9 +417,13 @@
   function updateCameraForProgress() {
     if (!state.followPhenomenon) return;
     const eventStrength = smoothstep(.04, .74, state.progress);
-    state.rotation = 2.62 + 1.62 * eventStrength;
-    state.tilt = -0.12 + eventStrength * 0.08;
-    state.zoom = 0.91 + Math.sin(eventStrength * Math.PI) * 0.055;
+    const rsReveal = smoothstep(.80, .985, state.progress);
+    const heatLongitude = 2.62 + 1.62 * eventStrength;
+    const pacificTilt = -0.12 + eventStrength * 0.08;
+    const pacificZoom = 0.91 + Math.sin(eventStrength * Math.PI) * 0.055;
+    state.rotation = heatLongitude + (5.36 - heatLongitude) * rsReveal;
+    state.tilt = pacificTilt + (0.45 - pacificTilt) * rsReveal;
+    state.zoom = pacificZoom + (1.04 - pacificZoom) * rsReveal;
     state.dirty = true;
   }
 
