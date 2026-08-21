@@ -13,6 +13,7 @@ Uma narrativa interativa sobre como o El Niño nasce no Pacífico, reorganiza a 
 - Controles por arraste, roda/pinça, linha do tempo e camadas temáticas.
 - Viagem de câmera que acompanha o sinal térmico no Pacífico e termina no Rio Grande do Sul.
 - Galeria de registros reais do estado, com créditos e fontes verificáveis.
+- Sistema visual responsivo com Space Grotesk nos títulos, Manrope na leitura e escalas tipográficas próprias para desktop, tablet e celular.
 - Preferência de movimento reduzido respeitada e fallback explícito para navegadores sem WebGL.
 
 ## Executar localmente
