@@ -12,6 +12,8 @@ Uma narrativa interativa sobre como o El Niño nasce no Pacífico, reorganiza a 
 - Renderização suspensa quando a aba ou o globo não estão visíveis.
 - Controles por arraste, roda/pinça, linha do tempo e camadas temáticas.
 - Viagem de câmera que acompanha o sinal térmico no Pacífico e termina no Rio Grande do Sul.
+- Destino geográfico calculado em latitude/longitude (30°S, 53,2°W), sem marcador preso à tela durante a navegação manual.
+- Corte científico em SVG com curvas contínuas para superfície quente, termoclina, alísios e ressurgência.
 - Galeria de registros reais do estado, com créditos e fontes verificáveis.
 - Sistema visual responsivo com Space Grotesk nos títulos, Manrope na leitura e escalas tipográficas próprias para desktop, tablet e celular.
 - Preferência de movimento reduzido respeitada e fallback explícito para navegadores sem WebGL.
@@ -33,6 +35,8 @@ A animação representa o mecanismo físico do fenômeno para fins educativos; n
 - [NASA Earth Science — El Niño](https://science.nasa.gov/earth/explore/el-nino/)
 - [INMET — El Niño e o Rio Grande do Sul](https://portal.inmet.gov.br/noticias/el-ni%C3%B1o-o-que-esperar-e-como-isso-pode-afetar-o-rio-grande-do-sul)
 - [Defesa Civil RS — avisos e alertas](https://defesacivil.rs.gov.br/avisos-e-alertas)
+- [Wikimedia Commons — temporal na Praia do Cassino, Rio Grande](https://commons.wikimedia.org/wiki/File:Temporal_no_meio_do_mar.JPG)
+- Referência matemática de projeção: [Google Data Arts Team — WebGL Globe](https://github.com/dataarts/webgl-globe)
 - Contornos de países: [world.geo.json](https://github.com/johan/world.geo.json), derivados de dados Natural Earth de domínio público.
 
 ## Estrutura
