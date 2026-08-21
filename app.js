@@ -8,6 +8,12 @@
     const amount = clamp((value - edge0) / (edge1 - edge0), 0, 1);
     return amount * amount * (3 - 2 * amount);
   };
+  const DEG_TO_RAD = Math.PI / 180;
+  const RS_VIEW = Object.freeze({
+    rotation: (360 - 53.2) * DEG_TO_RAD,
+    tilt: -30 * DEG_TO_RAD,
+    zoom: 1.08
+  });
 
   const canvas = $('#globe-canvas');
   const stageElement = $('#globe-stage');
@@ -371,7 +377,8 @@
     rainValue.textContent = phase.rain;
     phenomenonKicker.textContent = phaseNumber === 0 ? 'CONDIÇÃO NEUTRA' : `FASE 0${phaseNumber + 1} · ${phase.kicker}`;
     phenomenonAction.textContent = phase.action;
-    ensoOverlay.className = `enso-story-overlay phase-${phaseNumber}${state.progress >= .93 ? ' rs-arrived' : ''}`;
+    const rsArrived = state.progress >= .985 && state.followPhenomenon;
+    ensoOverlay.className = `enso-story-overlay phase-${phaseNumber}${rsArrived ? ' rs-arrived' : ''}`;
 
     playLabel.textContent = state.running ? 'Pausar fenômeno' : (state.progress > 0.97 ? 'Repetir o fenômeno' : 'Iniciar o fenômeno');
     playSymbol.textContent = state.running ? 'Ⅱ' : '▶';
@@ -421,9 +428,9 @@
     const heatLongitude = 2.62 + 1.62 * eventStrength;
     const pacificTilt = -0.12 + eventStrength * 0.08;
     const pacificZoom = 0.91 + Math.sin(eventStrength * Math.PI) * 0.055;
-    state.rotation = heatLongitude + (5.36 - heatLongitude) * rsReveal;
-    state.tilt = pacificTilt + (0.45 - pacificTilt) * rsReveal;
-    state.zoom = pacificZoom + (1.04 - pacificZoom) * rsReveal;
+    state.rotation = heatLongitude + (RS_VIEW.rotation - heatLongitude) * rsReveal;
+    state.tilt = pacificTilt + (RS_VIEW.tilt - pacificTilt) * rsReveal;
+    state.zoom = pacificZoom + (RS_VIEW.zoom - pacificZoom) * rsReveal;
     state.dirty = true;
   }
 
@@ -588,6 +595,7 @@
   stageElement.addEventListener('pointerdown', (event) => {
     if (event.target.closest('button')) return;
     state.followPhenomenon = false;
+    updateInterface();
     state.dragging = true;
     state.moved = false;
     state.pointerX = event.clientX;
@@ -623,6 +631,7 @@
   stageElement.addEventListener('dblclick', () => {
     state.followPhenomenon = true;
     updateCameraForProgress();
+    updateInterface();
   });
 
   const revealObserver = 'IntersectionObserver' in window
