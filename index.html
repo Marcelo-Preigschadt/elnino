@@ -9,8 +9,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=5.0.0">
-  <script src="app.js?v=5.0.0" defer></script>
+  <link rel="stylesheet" href="styles.css?v=6.0.0">
+  <script src="app.js?v=6.0.0" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#experiencia">Pular para a experiência</a>
@@ -75,7 +75,7 @@
             </div>
             <div class="rs-focus-marker">
               <i></i>
-              <span>RIO GRANDE DO SUL</span>
+              <span><b>RIO GRANDE DO SUL</b><small>30°S · 53°W</small></span>
             </div>
           </div>
 
@@ -119,16 +119,61 @@
       </div>
 
       <div class="mechanism reveal">
-        <div class="ocean-cutaway" aria-label="Corte esquemático do oceano Pacífico durante El Niño">
-          <div class="cutaway-head"><span>OESTE · INDONÉSIA</span><span>LESTE · AMÉRICA DO SUL</span></div>
-          <div class="atmosphere-band">
-            <div class="trade-flow"><i></i><i></i><i></i></div>
-            <span>ventos alísios enfraquecem</span>
-          </div>
-          <div class="surface-band"><div class="warm-pool"></div><span>água quente avança para leste</span></div>
-          <div class="deep-ocean"><div class="thermocline"></div><span>termoclina se aprofunda no leste</span></div>
-          <div class="upwelling"><i></i><span>menos ressurgência</span></div>
-        </div>
+        <figure class="ocean-cutaway">
+          <svg viewBox="0 0 1000 560" role="img" aria-labelledby="cutaway-title cutaway-desc">
+            <title id="cutaway-title">Corte do Pacífico tropical durante El Niño</title>
+            <desc id="cutaway-desc">Os ventos alísios enfraquecem, a água quente avança para leste e a termoclina fica mais profunda junto à América do Sul.</desc>
+            <defs>
+              <linearGradient id="sky-gradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#d9efeb"/>
+                <stop offset="1" stop-color="#a7d8d7"/>
+              </linearGradient>
+              <linearGradient id="ocean-gradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#087789"/>
+                <stop offset=".45" stop-color="#075264"/>
+                <stop offset="1" stop-color="#042c3a"/>
+              </linearGradient>
+              <linearGradient id="warm-gradient" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0" stop-color="#ef4d35"/>
+                <stop offset=".54" stop-color="#ff8a4c"/>
+                <stop offset=".82" stop-color="#ffd56a"/>
+                <stop offset="1" stop-color="#20a8ac"/>
+              </linearGradient>
+              <marker id="arrow-cyan" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+                <path d="M0 0L9 4.5L0 9Z" fill="#287b82"/>
+              </marker>
+              <marker id="arrow-warm" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+                <path d="M0 0L9 4.5L0 9Z" fill="#ffbe62"/>
+              </marker>
+            </defs>
+
+            <rect width="1000" height="170" fill="url(#sky-gradient)"/>
+            <rect y="170" width="1000" height="390" fill="url(#ocean-gradient)"/>
+            <path d="M0 170H1000V236C838 212 706 226 574 248C413 275 252 264 0 213Z" fill="url(#warm-gradient)"/>
+            <path class="thermocline-line" d="M26 332C246 390 508 412 751 398C850 392 924 374 974 354"/>
+
+            <g class="trade-arrows" fill="none" stroke="#287b82" stroke-width="2" marker-end="url(#arrow-cyan)">
+              <path d="M310 82H205"/><path d="M550 82H445"/><path d="M790 82H685"/>
+            </g>
+            <g class="warm-arrows" fill="none" stroke="#ffbe62" stroke-width="3" marker-end="url(#arrow-warm)">
+              <path d="M250 205C354 216 447 218 535 210"/>
+              <path d="M525 226C640 230 728 221 824 204"/>
+            </g>
+            <g class="weak-upwelling" fill="none" stroke="#77d9d6" stroke-width="2" stroke-dasharray="7 8" marker-end="url(#arrow-cyan)">
+              <path d="M908 292V215"/>
+            </g>
+
+            <g class="cutaway-labels">
+              <text x="28" y="38">OESTE · INDONÉSIA</text>
+              <text x="972" y="38" text-anchor="end">LESTE · AMÉRICA DO SUL</text>
+              <text x="500" y="121" text-anchor="middle" class="label-dark">VENTOS ALÍSIOS ENFRAQUECEM</text>
+              <text x="565" y="190" text-anchor="middle" class="label-light">ÁGUA QUENTE AVANÇA PARA LESTE</text>
+              <text x="500" y="448" text-anchor="middle" class="label-water">TERMOCLINA MAIS PROFUNDA NO LESTE</text>
+              <text x="900" y="326" text-anchor="middle" class="label-water small">RESSURGÊNCIA REDUZIDA</text>
+            </g>
+          </svg>
+          <figcaption>Representação conceitual · proporções verticais ampliadas para leitura</figcaption>
+        </figure>
 
         <ol class="mechanism-steps">
           <li><span>01</span><div><strong>Os ventos perdem força</strong><p>Os alísios, que normalmente empurram a superfície para oeste, enfraquecem.</p></div></li>
@@ -175,14 +220,14 @@
 
         <article class="evidence-card reveal">
           <figure>
-            <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/Storms_over_South_America_on_2_May_2024.png" alt="Imagem de satélite das tempestades sobre o sul da América do Sul em 2 de maio de 2024" loading="lazy" decoding="async">
-            <figcaption>Tempestades sobre o Sul, 2 mai. 2024 · NASA Worldview · domínio público</figcaption>
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/20/Temporal_no_meio_do_mar.JPG/1280px-Temporal_no_meio_do_mar.JPG" alt="Nuvens escuras de temporal avançando sobre a Praia do Cassino, em Rio Grande" loading="lazy" decoding="async">
+            <figcaption>Praia do Cassino, Rio Grande · Mauren da Silva Rodrigues · CC BY-SA 3.0</figcaption>
           </figure>
           <div class="evidence-copy">
             <span class="card-number">02 · CHUVA E TEMPORAIS</span>
-            <h3>O risco vem da combinação.</h3>
-            <p>El Niño pode favorecer chuva acima da média no RS. Um extremo específico também depende de frentes, jatos de baixos níveis, bloqueios, umidade disponível e das condições do Atlântico.</p>
-            <a href="https://commons.wikimedia.org/wiki/File:Storms_over_South_America_on_2_May_2024.png" target="_blank" rel="noopener">Ver imagem NASA ↗</a>
+            <h3>O temporal é o efeito visível.</h3>
+            <p>El Niño pode favorecer chuva acima da média no RS. A tempestade concreta depende também de frentes, jatos de baixos níveis, umidade, instabilidade e das condições do Atlântico.</p>
+            <a href="https://commons.wikimedia.org/wiki/File:Temporal_no_meio_do_mar.JPG" target="_blank" rel="noopener">Ver registro e licença ↗</a>
           </div>
         </article>
 
