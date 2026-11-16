@@ -1,5 +1,5 @@
-import { Bench } from "./bench.js?v=2";
-import { Decantation, maxAngle, suspendedSand, totalSand } from "./model.js";
+import { Bench } from "./bench.js?v=3";
+import { Decantation, maxAngle, suspendedSand, totalSand } from "./model.js?v=3";
 
 const byId = (id) => document.getElementById(id);
 const phases = ["prepare", "settle", "decant", "result"];
@@ -8,7 +8,7 @@ const headings = Object.fromEntries(phases.map((phase) => [phase, byId(phase + "
 const steps = phases.slice(0, 3).map((phase) => byId("step-" + phase));
 const scene = byId("scene");
 const canvas = byId("glassware");
-const bench = new Bench(canvas);
+const bench = new Bench(canvas, requestUpdate);
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 const angle = byId("angle");
 const prepareButton = byId("prepare-action");
@@ -24,10 +24,11 @@ const progressBar = byId("settled-progress");
 const percent = byId("settled-percent");
 const volume = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 });
 const mass = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const lowCarryover = .20;
 
 const preparationCopy = {
-  water: { button: "Adicionar água", dose: "200 mL", help: "Adicione água ao béquer A. Em seguida, acrescente a areia.", running: "Adicionando água" },
-  sand: { button: "Adicionar areia", dose: "20 g", help: "Adicione areia à água. Observe onde os grãos se acumulam.", running: "Adicionando areia" },
+  water: { button: "Adicionar água", dose: "200 mL", help: "Adicione água ao béquer A. Em seguida, acrescente a mistura de areia e silte.", running: "Adicionando água" },
+  sand: { button: "Adicionar areia e silte", dose: "20 g", help: "Acrescente o material à água. Observe os grãos caindo.", running: "Adicionando areia e silte" },
   mix: { button: "Misturar", dose: "", help: "Agite com o bastão de vidro para pôr os grãos em suspensão.", running: "Agitando a mistura" },
 };
 const decantHelp = "Arraste o béquer ou use o controle. Aumente o ângulo aos poucos e observe o sedimento.";
@@ -38,6 +39,7 @@ let previousPreparation = null;
 let previousStatus = null;
 let requestedFrame = 0;
 let lastFrame = 0;
+let lastDraw = -Infinity;
 let remainder = 0;
 let visualTime = 0;
 let needsDraw = true;
@@ -68,22 +70,22 @@ function describeScene() {
     if (kind) return [preparationCopy[kind].running, kind === "mix"];
     if (model.nextPreparation === "water") return ["Bancada pronta", false];
     if (model.nextPreparation === "sand") return ["Água no béquer A", false];
-    return ["Areia no fundo do béquer A", false];
+    return ["Água com areia e silte", suspendedSand(model.source) > .15];
   }
 
   if (model.phase === "settle") {
-    return model.settledPercent >= 99.5
-      ? ["Sobrenadante clarificado", false]
+    return model.settledPercent >= 98.5
+      ? ["Sobrenadante mais claro", false]
       : ["Mistura em repouso", true];
   }
 
-  if (model.phase === "result") return ["Decantação concluída", totalSand(model.receiver) >= .10];
+  if (model.phase === "result") return ["Decantação concluída", totalSand(model.receiver) >= lowCarryover];
   if (model.flowing) {
     return model.flowSand >= .003
-      ? ["Areia passando para o béquer B", true]
+      ? ["Partículas passando para o béquer B", true]
       : ["Líquido passando para o béquer B", false];
   }
-  if (totalSand(model.receiver) >= .10) return ["Areia no béquer de coleta", true];
+  if (totalSand(model.receiver) >= lowCarryover) return ["Partículas no béquer de coleta", true];
   if (model.canFinish) return ["Béquer A na vertical", false];
   if (model.receiver.water >= 1) return ["Fluxo interrompido", false];
   return ["Incline o béquer A para a direita", false];
@@ -105,16 +107,16 @@ function paintPhase(moveFocus) {
 function paintResult() {
   const grains = totalSand(model.receiver);
   let feedback;
-  if (grains >= .10) {
-    feedback = "Parte da areia passou para o béquer B. Compare com uma tentativa em que a mistura repousa mais e o béquer é inclinado aos poucos.";
+  if (grains >= lowCarryover) {
+    feedback = "Parte dos sólidos passou para o béquer B. Compare com uma tentativa em que a mistura repousa mais e o béquer é inclinado aos poucos.";
   } else if (model.receiver.water < 120) {
-    feedback = "O líquido coletado tem pouca areia. Ainda é possível recuperar mais sobrenadante do béquer A.";
+    feedback = "Poucos sólidos passaram para o béquer B. Ainda é possível recuperar mais sobrenadante do béquer A.";
   } else {
     feedback = "Você transferiu o sobrenadante e preservou a camada de sedimento no béquer A.";
   }
   text(byId("result-feedback"), feedback);
   text(byId("result-detail"), "No béquer A ficaram " + volume.format(model.source.water) + " mL de água e "
-    + mass.format(totalSand(model.source)) + " g de areia.");
+    + mass.format(totalSand(model.source)) + " g de sólidos.");
 }
 
 function paintInterface() {
@@ -150,6 +152,7 @@ function paintInterface() {
     finishButton.disabled = !model.canFinish;
     let help = decantHelp;
     if (model.canFinish) help = "Observe o líquido coletado. Você pode ver o resultado ou voltar a inclinar o béquer.";
+    else if (model.flowing && model.targetAngle - model.angle > 5) help = "O béquer se inclina aos poucos enquanto o líquido escoa.";
     else if (model.receiver.water >= 95 && !model.flowing) help = "Volte à vertical para avaliar a coleta ou ajuste a inclinação para continuar.";
     text(byId("decant-help"), help);
   }
@@ -174,6 +177,7 @@ function requestUpdate() {
 
 function isMoving() {
   if (model.preparation) return true;
+  if (model.phase === "prepare") return suspendedSand(model.source) > .001;
   if (model.phase === "settle") return model.settledPercent < 99.995;
   return model.phase === "decant" && (
     model.angle !== model.targetAngle || model.flow > .001
@@ -183,7 +187,7 @@ function isMoving() {
 
 function frame(now) {
   requestedFrame = 0;
-  const elapsed = lastFrame ? Math.min(.09, (now - lastFrame) / 1000) : 0;
+  const elapsed = lastFrame ? Math.min(.25, (now - lastFrame) / 1000) : 0;
   lastFrame = now;
   if (isMoving() || model.phase === "settle") {
     remainder += elapsed;
@@ -196,8 +200,9 @@ function frame(now) {
   paintInterface();
 
   const moving = isMoving();
-  if (needsDraw || moving || wasMoving) {
+  if (needsDraw || (moving && now - lastDraw >= 1000 / 30) || (wasMoving && !moving)) {
     bench.draw(model, reducedMotion.matches ? 0 : visualTime);
+    lastDraw = now;
     needsDraw = false;
   }
   wasMoving = moving;

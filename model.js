@@ -7,6 +7,8 @@ export const grainDensity = 2.65;
 export const bedPorosity = .4;
 const beakerAreaMm2 = Math.PI * 36 ** 2;
 const epsilon = 1e-8;
+const maxPourRateMlPerSecond = 18;
+const overflowHeadMl = 23;
 
 function settlingSpeed(diameterMm) {
   // Ferguson and Church (2004), natural quartz grains in water at 20 °C.
@@ -18,9 +20,10 @@ function settlingSpeed(diameterMm) {
 }
 
 const grainClasses = [
-  { diameterMm: .42, share: .44 },
-  { diameterMm: .19, share: .34 },
-  { diameterMm: .075, share: .22 },
+  { diameterMm: .160, share: .38 },
+  { diameterMm: .078, share: .25 },
+  { diameterMm: .041, share: .22 },
+  { diameterMm: .022, share: .15 },
 ].map((grain) => ({ ...grain, speed: settlingSpeed(grain.diameterMm) }));
 
 function newSample() {
@@ -54,14 +57,21 @@ export function waterInPores(sample) {
 }
 
 function addSand(sample, mass) {
-  sample.grains.forEach((grain, index) => { grain.bed += mass * grainClasses[index].share; });
+  sample.grains.forEach((grain, index) => {
+    grain.layers[layerCount - 1] += mass * grainClasses[index].share;
+  });
 }
 
-function mix(sample, fraction) {
+function mix(sample, fraction, dt) {
+  const circulation = 1 - Math.exp(-2 * dt);
   for (const grain of sample.grains) {
     const released = grain.bed * fraction;
     grain.bed -= released;
-    for (let index = 0; index < layerCount; index++) grain.layers[index] += released / layerCount;
+    const average = grain.layers.reduce((total, mass) => total + mass, 0) / layerCount;
+    for (let index = 0; index < layerCount; index++) {
+      const redistributed = (average - grain.layers[index]) * circulation;
+      grain.layers[index] += redistributed + released / layerCount;
+    }
   }
 }
 
@@ -118,6 +128,20 @@ function transfer(source, receiver, water, liftFraction) {
   return sandMoved;
 }
 
+function angleDuringPour(angle, requested, contents) {
+  if (requested <= angle || contents - capacityAtLip(requested) <= overflowHeadMl) return requested;
+
+  // Keep the liquid near the spout while a hand pour drains the beaker.
+  let lower = angle;
+  let upper = requested;
+  for (let iteration = 0; iteration < 8; iteration++) {
+    const middle = (lower + upper) / 2;
+    if (contents - capacityAtLip(middle) > overflowHeadMl) upper = middle;
+    else lower = middle;
+  }
+  return lower;
+}
+
 export class Decantation {
   constructor() {
     this.source = newSample();
@@ -152,7 +176,7 @@ export class Decantation {
   prepare() {
     if (this.phase !== "prepare" || this.preparation) return;
     const kind = this.nextPreparation;
-    const durations = { water: 1, sand: .9, mix: 1.4 };
+    const durations = { water: 5.8, sand: 2.8, mix: 6 };
     this.preparation = { kind, time: 0, duration: durations[kind] };
   }
 
@@ -161,9 +185,13 @@ export class Decantation {
     const before = action.time / action.duration;
     action.time = Math.min(action.time + dt, action.duration);
     const after = action.time / action.duration;
-    if (action.kind === "water") this.source.water += recipe.waterMl * (after - before);
-    if (action.kind === "sand") addSand(this.source, recipe.sandG * (after - before));
-    if (action.kind === "mix") mix(this.source, (after - before) / (1 - before));
+    const dose = smoothstep(0, 1, after) - smoothstep(0, 1, before);
+    if (action.kind === "water") this.source.water += recipe.waterMl * dose;
+    if (action.kind === "sand") {
+      addSand(this.source, recipe.sandG * dose);
+      settle(this.source, dt);
+    }
+    if (action.kind === "mix") mix(this.source, (after - before) / (1 - before), dt);
 
     if (after === 1) {
       this.preparation = null;
@@ -193,6 +221,8 @@ export class Decantation {
       settle(this.source, dt);
     } else if (this.phase === "decant") {
       this.advanceDecanting(dt);
+    } else if (this.phase === "prepare") {
+      settle(this.source, dt);
     }
   }
 
@@ -200,24 +230,30 @@ export class Decantation {
     const difference = this.targetAngle - this.angle;
     const movement = Math.abs(difference) < .18
       ? difference
-      : clamp(difference * 13, -140, 102) * dt;
-    this.angle += Math.sign(difference) * Math.min(Math.abs(difference), Math.abs(movement));
+      : clamp(difference * 9, -110, 54) * dt;
+    const requested = this.angle + Math.sign(difference) * Math.min(Math.abs(movement), Math.abs(difference));
+    const contents = this.source.water + totalSand(this.source) / grainDensity;
+    const nextAngle = angleDuringPour(this.angle, requested, contents);
+    const angularVelocity = (nextAngle - this.angle) / dt;
+    this.angle = nextAngle;
 
     const capacity = this.targetAngle === 0 && this.angle === 0 ? vesselCapacityAtRest : capacityAtLip(this.angle);
-    const excess = Math.max(0, this.source.water + totalSand(this.source) / grainDensity - capacity);
+    const excess = Math.max(0, contents - capacity);
     const freeWater = this.source.water - waterInPores(this.source);
-    const waterOut = Math.min(freeWater, excess, Math.min(92, 13 * Math.sqrt(excess)) * dt);
+    // A stream weakens as the free surface approaches the lip. The upper limit represents a hand pour.
+    const discharge = maxPourRateMlPerSecond * (excess / (excess + 17)) ** .85;
+    const waterOut = Math.min(freeWater, excess, discharge * dt);
     this.flow = waterOut / dt;
     this.flowSand = 0;
 
     if (waterOut > epsilon) {
-      const fastTilt = smoothstep(36, 98, movement / dt) * smoothstep(28, 59, this.angle);
+      const fastTilt = smoothstep(28, 53, angularVelocity) * smoothstep(28, 59, this.angle);
       const nearBed = smoothstep(70, 84, this.angle) * (1 - smoothstep(33, 71, this.source.water));
       const lift = 1 - Math.exp(-(fastTilt * .13 + nearBed * .8) * waterOut / Math.max(14, freeWater));
       this.flowSand = transfer(this.source, this.receiver, waterOut, lift) / waterOut;
     }
 
-    settle(this.source, dt * (1 - .66 * smoothstep(2, 40, this.flow)));
+    settle(this.source, dt * (1 - .58 * smoothstep(2, 18, this.flow)));
     settle(this.receiver, dt);
   }
 }

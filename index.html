@@ -4,11 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f7f8f3">
-  <meta name="description" content="Laboratório interativo de química. Separe água e areia por sedimentação e decantação em uma bancada virtual.">
+  <meta name="description" content="Laboratório interativo de química. Observe a sedimentação de areia e silte em água e separe o sobrenadante por decantação.">
   <title>Decantação | Bancada de Química</title>
   <link rel="icon" href="./assets/favicon.png" type="image/png">
-  <link rel="stylesheet" href="./styles.css?v=2">
-  <script type="module" src="./app.js?v=2"></script>
+  <link rel="preload" href="./assets/bequer-borossilicato.webp" as="image" type="image/webp">
+  <link rel="stylesheet" href="./styles.css?v=3">
+  <script type="module" src="./app.js?v=3"></script>
 </head>
 <body>
   <a class="skip-link" href="#experimento">Ir para o experimento</a>
@@ -32,11 +33,11 @@
       <div>
         <p class="eyebrow">Separação de misturas</p>
         <h1>Decantação</h1>
-        <p class="intro-copy">Separe água e areia. Deixe os grãos sedimentarem e transfira o líquido sobrenadante para outro béquer.</p>
+        <p class="intro-copy">Deixe a areia e o silte sedimentarem. Transfira o líquido sobrenadante para outro béquer.</p>
       </div>
       <div class="materials" aria-label="Materiais da prática">
         <div><span class="swatch swatch-water" aria-hidden="true"></span> Água <strong>200 mL</strong></div>
-        <div><span class="swatch swatch-sand" aria-hidden="true"></span> Areia <strong>20 g</strong></div>
+        <div><span class="swatch swatch-sand" aria-hidden="true"></span> Areia e silte <strong>20 g</strong></div>
       </div>
     </header>
 
@@ -59,7 +60,7 @@
         <dl class="measurements" aria-label="Medições da prática">
           <div><dt>Tempo de repouso</dt><dd id="rest-time">00:00</dd></div>
           <div><dt>Água coletada</dt><dd><span id="water-value">0</span> <small>mL</small></dd></div>
-          <div><dt>Areia na coleta</dt><dd><span id="sand-value">0,00</span> <small>g</small></dd></div>
+          <div><dt>Sólidos na coleta</dt><dd><span id="sand-value">0,00</span> <small>g</small></dd></div>
         </dl>
       </section>
 
@@ -72,7 +73,7 @@
           </li>
           <li id="step-settle">
             <span class="step-number" aria-hidden="true">2</span>
-            <div><strong>Sedimentação</strong><small>Deixe a areia se depositar</small></div>
+            <div><strong>Sedimentação</strong><small>Deixe os sólidos se depositarem</small></div>
           </li>
           <li id="step-decant">
             <span class="step-number" aria-hidden="true">3</span>
@@ -83,7 +84,7 @@
         <div class="protocol-action">
           <section id="controls-prepare">
             <h3 id="prepare-title" tabindex="-1">Monte a mistura</h3>
-            <p id="prepare-help">Adicione água ao béquer A. Em seguida, acrescente a areia.</p>
+            <p id="prepare-help">Adicione água ao béquer A. Em seguida, acrescente a mistura de areia e silte.</p>
             <button class="button button-primary" id="prepare-action" type="button">
               <span class="icon icon-add" id="prepare-icon" aria-hidden="true"></span>
               <span id="prepare-action-label">Adicionar água</span>
@@ -93,9 +94,9 @@
 
           <section id="controls-settle" hidden>
             <h3 id="settle-title" tabindex="-1">Observe a deposição</h3>
-            <p>Compare a aparência do líquido acima do sedimento com a da mistura recém-agitada.</p>
+            <p>Observe o líquido clarear de cima para baixo. Nesta mistura, acompanhe a clarificação por cerca de dois minutos antes de verter.</p>
             <div class="sediment-progress">
-              <label for="settled-progress">Areia depositada</label>
+              <label for="settled-progress">Sólidos depositados</label>
               <span id="settled-percent">0%</span>
               <progress id="settled-progress" max="100" value="0"></progress>
             </div>
@@ -137,7 +138,7 @@
         <article>
           <span class="observation-icon sediment-icon" aria-hidden="true"></span>
           <h3>Sedimento</h3>
-          <p>Em repouso, a areia se deposita por ação da gravidade. Os grãos maiores chegam ao fundo primeiro.</p>
+          <p>Em repouso, a gravidade deposita os grãos maiores primeiro. As partículas de silte permanecem mais tempo em suspensão.</p>
         </article>
         <article>
           <span class="observation-icon liquid-icon" aria-hidden="true"></span>
@@ -147,7 +148,7 @@
         <article>
           <span class="observation-icon tilt-icon" aria-hidden="true"></span>
           <h3>Controle do fluxo</h3>
-          <p>Ao verter, observe a areia no fundo do béquer A. Deixar um pouco de água ajuda a manter o sedimento no recipiente.</p>
+          <p>Ao verter, observe o fundo do béquer A. Deixar um pouco de água ajuda a manter o sedimento no recipiente.</p>
         </article>
       </div>
     </section>
@@ -155,7 +156,7 @@
     <footer class="lab-footer">
       <details>
         <summary>Sobre as medições da simulação</summary>
-        <p>O modelo usa areia de quartzo com três tamanhos de grão em água a 20 °C. O escoamento e o arraste da areia são aproximados. As massas e os volumes na tela são estimativas do modelo. As partículas estão ampliadas para facilitar a observação.</p>
+        <p>O modelo usa areia fina e silte quartzosos em água a 20 °C. A sedimentação avança em segundos reais com a bancada na tela. O tempo varia com o tamanho dos grãos. A vazão e o arraste seguem aproximações do modelo.</p>
       </details>
     </footer>
   </main>

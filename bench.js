@@ -1,4 +1,4 @@
-import { bedPorosity, depositedSand, grainDensity, layerCount, suspendedSand, totalSand } from "./model.js";
+import { bedPorosity, depositedSand, grainDensity, layerCount, suspendedSand, totalSand } from "./model.js?v=3";
 import { clamp, liquidLevel, projection, rotatePoint, smoothstep, spanAt, vessel } from "./vessel.js";
 
 const lip = { x: 88, y: -162 };
@@ -37,11 +37,7 @@ const suspendedDots = Array.from({ length: 16 }, (_, index) => ({
   glint: noise(index + 94),
 }));
 
-const bedDots = Array.from({ length: 130 }, (_, index) => ({
-  x: noise(index + 170),
-  y: noise(index + 308),
-  glint: noise(index + 465),
-}));
+const bedRoughness = Array.from({ length: 21 }, (_, index) => noise(index + 170) - .5);
 
 const doseDots = Array.from({ length: 38 }, (_, index) => ({
   x: noise(index + 606),
@@ -60,9 +56,16 @@ function oval(ctx, x, y, rx, ry) {
   ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
 }
 
+function loadAsset(name, onload) {
+  const asset = new Image();
+  asset.addEventListener("load", onload);
+  asset.src = new URL("./assets/" + name, import.meta.url).href;
+  return asset;
+}
+
 function drawShadow(ctx, x, y, lift) {
   ctx.save();
-  ctx.translate(x + lift * 12, y + 2);
+  ctx.translate(x + lift * 12, y + 6);
   ctx.scale(1 + lift * .27, .145 + lift * .05);
   const shadow = ctx.createRadialGradient(0, 0, 13, 0, 0, 98);
   shadow.addColorStop(0, "rgba(0,13,13," + (.68 - .33 * lift) + ")");
@@ -95,6 +98,43 @@ function pathOutline(ctx, points) {
   ctx.closePath();
 }
 
+function drawRefraction(ctx, frame, position, outline, level, bottom) {
+  const { backdrop, layout } = frame;
+  if (!backdrop.width) return;
+  const { scale, width } = layout;
+  const left = Math.min(...outline.map((point) => point.x));
+  const right = Math.max(...outline.map((point) => point.x));
+  const originX = width / 2 + position.x * scale;
+  const originY = position.y * scale;
+  const depth = bottom - level;
+  if (depth < 1) return;
+
+  const sampleTop = clamp(originY + (level + 3.5) * scale, 0, backdrop.height);
+  const sampleBottom = clamp(originY + (bottom + 8) * scale, 0, backdrop.height);
+  if (sampleBottom - sampleTop < 1) return;
+
+  // Resample the scene through a cylindrical lens in horizontal, gravity-aligned strips.
+  const bands = 18;
+  const bandWidth = (right - left) / bands;
+  const overlap = 1.4 / (scale * layout.dpr);
+  const center = (left + right) / 2;
+  const halfWidth = (right - left) / 2;
+  const lens = (edge) => {
+    const u = 2 * edge / bands - 1;
+    const mapped = u * (.73 + .29 * u ** 2);
+    return clamp(originX + (center + mapped * halfWidth) * scale, 0, backdrop.width);
+  };
+
+  for (let band = 0; band < bands; band++) {
+    const extension = band + 1 < bands ? overlap : 0;
+    const sampleLeft = lens(band);
+    const sampleWidth = lens(band + 1 + extension / bandWidth) - sampleLeft;
+    if (sampleWidth < .2) continue;
+    ctx.drawImage(backdrop, sampleLeft, sampleTop, sampleWidth, sampleBottom - sampleTop,
+      left + band * bandWidth, level, bandWidth + extension, depth);
+  }
+}
+
 function drawSuspension(ctx, sample, outline, level, bottom, time) {
   const depth = bottom - level;
   if (depth < 1) return;
@@ -103,35 +143,36 @@ function drawSuspension(ctx, sample, outline, level, bottom, time) {
   for (let step = 0; step < count; step++) {
     const layer = count - step - 1;
     const mass = sample.grains.reduce((total, grain) => total + grain.layers[layer], 0);
-    const opacity = .83 * (1 - Math.exp(-37 * mass * count / Math.max(10, sample.water)));
-    murk.addColorStop((step + .5) / count, "rgba(177,130,82," + opacity + ")");
+    const opacity = .78 * (1 - Math.exp(-36 * mass * count / Math.max(8, sample.water)));
+    murk.addColorStop((step + .5) / count, "rgba(160,123,85," + opacity + ")");
   }
   ctx.fillStyle = murk;
   ctx.fillRect(-165, level, 380, depth + 1);
 
-  sample.grains.forEach((grain, size) => {
-    const radius = [1.2, .95, .65][size];
+  // The silt contributes diffuse turbidity. The larger grains give a few visible flecks.
+  sample.grains.slice(0, 2).forEach((grain, size) => {
+    const radius = size === 0 ? .65 : .43;
     grain.layers.forEach((mass, layer) => {
       if (mass < .005) return;
-      const dots = Math.min(suspendedDots.length, Math.ceil(12 * Math.sqrt(mass)));
+      const dots = Math.min(7, Math.ceil(5 * Math.sqrt(mass)));
       for (let index = 0; index < dots; index++) {
         const dot = suspendedDots[(index + layer * 3 + size * 5) % suspendedDots.length];
-        const drift = (dot.y + time * (.34 - .09 * size)) % 1;
+        const drift = (dot.y + 1 - time * (.66 - .25 * size) % 1) % 1;
         const y = bottom - (layer + drift) * depth / count;
         const span = spanAt(outline, y);
         if (!span) continue;
         const [left, right] = span;
         const width = right - left;
         const x = left + 2 + (width - 4) * (.08 + .84 * dot.x)
-          + Math.sin(time * 2 + index + layer) * 1.6;
-        ctx.fillStyle = dot.glint > .56 ? "#e3c08dc4" : "#694a34a1";
-        ctx.fillRect(x, y, radius * 1.5, radius);
+          + Math.sin(time * 1.15 + index + layer) * .75;
+        ctx.fillStyle = dot.glint > .62 ? "#e6cca693" : "#64462d6d";
+        ctx.fillRect(x, y, radius * 1.7, radius);
       }
     });
   });
 }
 
-function drawBed(ctx, sample, angle) {
+function drawBed(ctx, sample, angle, sedimentTexture) {
   const mass = depositedSand(sample);
   if (mass < .013) return;
   const packedVolume = mass / grainDensity / (1 - bedPorosity);
@@ -139,30 +180,33 @@ function drawBed(ctx, sample, angle) {
   const lean = smoothstep(27, 81, angle);
   const left = -67 + 69 * lean;
   const right = 67;
-  const levelAt = (fraction) => vessel.bottom - depth * (1 - lean * .66 + fraction * lean * 2.25)
-    + (Math.sin(fraction * 35) + Math.sin(fraction * 61) * .42) * Math.min(depth * .18, .64);
-
+  ctx.save();
   ctx.beginPath();
   ctx.moveTo(left, vessel.bottom + 2);
-  for (let point = 0; point <= 20; point++) {
-    const fraction = point / 20;
-    ctx.lineTo(left + (right - left) * fraction, levelAt(fraction));
-  }
+  bedRoughness.forEach((roughness, point) => {
+    const fraction = point / (bedRoughness.length - 1);
+    const surface = vessel.bottom - depth * (1 - lean * .66 + fraction * lean * 2.25);
+    ctx.lineTo(left + (right - left) * fraction, surface + roughness * Math.min(depth * .41, 2.6));
+  });
   ctx.lineTo(right, vessel.bottom + 2);
   ctx.closePath();
-  ctx.fillStyle = linear(ctx, 0, vessel.bottom - depth * 2, 0, vessel.bottom + 2, [
-    [0, "#e5c696"], [.46, "#c8a276"], [1, "#79573c"],
-  ]);
+  ctx.fillStyle = "#93714e";
   ctx.fill();
-
-  for (const dot of bedDots) {
-    const y = levelAt(dot.x);
-    ctx.fillStyle = dot.glint > .63 ? "#f8deb6a1" : "#69452c80";
-    ctx.fillRect(left + (right - left) * dot.x, y + dot.y * (vessel.bottom - y + 1), 1 + dot.glint, .7);
+  ctx.clip();
+  const textureHeight = 33;
+  const textureTop = vessel.bottom - textureHeight + 3;
+  if (sedimentTexture.naturalWidth) {
+    ctx.drawImage(sedimentTexture, left, textureTop, right - left, textureHeight);
   }
+  ctx.fillStyle = linear(ctx, 0, vessel.bottom - depth * 1.8, 0, vessel.bottom + 2, [
+    [0, "#e9d1a337"], [.45, "#b18d6508"], [1, "#392a208c"],
+  ]);
+  ctx.fillRect(left, textureTop, right - left, textureHeight);
+  ctx.restore();
 }
 
-function drawLiquidAndSediment(ctx, sample, angle, time) {
+function drawLiquidAndSediment(ctx, sample, position, time, frame) {
+  const { angle } = position;
   const outline = angle === 0 ? initialOutline : projection(angle);
   const bottom = Math.max(...outline.map((point) => point.y));
   ctx.save();
@@ -172,8 +216,9 @@ function drawLiquidAndSediment(ctx, sample, angle, time) {
 
   if (sample.water > .06) {
     const level = liquidLevel(sample.water + totalSand(sample) / grainDensity, angle, outline);
+    drawRefraction(ctx, frame, position, outline, level, bottom);
     ctx.fillStyle = linear(ctx, 0, level, 0, bottom, [
-      [0, "#c3e5e449"], [.15, "#a8d8d929"], [.83, "#7aafbabd"], [1, "#a1c9c879"],
+      [0, "#e7f4e61c"], [.26, "#cadcd013"], [.82, "#657a6d39"], [1, "#384d4549"],
     ]);
     ctx.fillRect(-168, level, 388, bottom - level + 2);
     drawSuspension(ctx, sample, outline, level, bottom, time);
@@ -182,49 +227,51 @@ function drawLiquidAndSediment(ctx, sample, angle, time) {
     if (span && span[1] - span[0] > 1) {
       const [min, max] = span;
       const halfWidth = (max - min) / 2;
+      const center = min + halfWidth;
+      const curvature = Math.min(8.5, halfWidth * .125);
       const cloudy = clamp(suspendedSand(sample) * 12 / Math.max(5, sample.water), 0, 1);
-      oval(ctx, min + halfWidth, level + .45, halfWidth, Math.min(8, halfWidth * .13));
-      ctx.fillStyle = cloudy > .3 ? "#dfbf9576" : "#c6f1ed49";
+      oval(ctx, center, level + .45, halfWidth, curvature);
+      ctx.fillStyle = linear(ctx, 0, level - curvature, 0, level + curvature, [
+        [0, "#161f233f"], [.5, cloudy > .3 ? "#d7b99654" : "#e3ece018"], [1, "#dbe9df39"],
+      ]);
       ctx.fill();
-      ctx.strokeStyle = "#ecfffc9c";
-      ctx.lineWidth = .85;
+      ctx.beginPath();
+      ctx.ellipse(center, level + .45, halfWidth, curvature, 0, 0, Math.PI);
+      ctx.strokeStyle = linear(ctx, min, 0, max, 0, [[0, "#edf9ebab"], [.45, "#d8e8dd61"], [1, "#c3d0c444"]]);
+      ctx.lineWidth = .72;
       ctx.stroke();
     }
   }
 
   ctx.rotate(angle * radians);
-  drawBed(ctx, sample, angle);
+  drawBed(ctx, sample, angle, frame.sedimentTexture);
   ctx.restore();
 }
 
-function drawGraduations(ctx, label) {
-  ctx.font = "600 10px system-ui, sans-serif";
+function drawGraduations(ctx) {
+  ctx.font = "500 9.5px Arial, sans-serif";
   ctx.textAlign = "right";
   ctx.textBaseline = "middle";
-  ctx.fillStyle = "#ebfaf4dd";
-  ctx.strokeStyle = "#ebfaf4af";
-  ctx.lineWidth = 1.25;
+  ctx.fillStyle = "#f2f3e7cf";
+  ctx.strokeStyle = "#f2f3e7ad";
+  ctx.lineWidth = .81;
   ctx.beginPath();
   for (const { volume, y } of graduations) {
     ctx.moveTo(39, y);
-    ctx.lineTo(54, y + .5);
+    ctx.lineTo(53, y + .4);
     ctx.fillText(volume, 35, y);
     const intermediate = y + 11.1;
     ctx.moveTo(46, intermediate);
-    ctx.lineTo(54, intermediate + .4);
+    ctx.lineTo(53, intermediate + .4);
   }
   ctx.stroke();
 
-  ctx.fillStyle = "#f0fcf9a1";
-  ctx.font = "600 8px system-ui, sans-serif";
-  ctx.fillText("mL", 54, graduations[4].y - 12);
-  ctx.textAlign = "center";
-  ctx.font = "650 23px system-ui, sans-serif";
-  ctx.fillStyle = "#effbf7e6";
-  ctx.fillText(label, -26, -72);
+  ctx.fillStyle = "#f2f3e7ad";
+  ctx.font = "500 8px Arial, sans-serif";
+  ctx.fillText("mL", 53, graduations[4].y - 11);
 }
 
-function drawGlassFront(ctx, label) {
+function drawGlassFront(ctx) {
   ctx.strokeStyle = linear(ctx, -81, 0, 86, 0, [
     [0, "#e9ffffbd"], [.09, "#9cd2d389"], [.33, "#dae8e06e"],
     [.72, "#afd0ce70"], [1, "#f3fffce0"],
@@ -262,27 +309,28 @@ function drawGlassFront(ctx, label) {
   ctx.lineWidth = 2.2;
   ctx.strokeStyle = "#efffffe0";
   ctx.stroke();
-
-  drawGraduations(ctx, label);
 }
 
-function drawBeaker(ctx, position, sample, label, time) {
+function drawBeaker(ctx, position, sample, time, frame) {
   ctx.save();
   ctx.translate(position.x, position.y);
   ctx.rotate(position.angle * radians);
-  drawGlassBack(ctx);
-  drawLiquidAndSediment(ctx, sample, position.angle, time);
-  drawGlassFront(ctx, label);
+  const shell = frame.glassShell;
+  if (!shell.naturalWidth) drawGlassBack(ctx);
+  drawLiquidAndSediment(ctx, sample, position, time, frame);
+  if (shell.naturalWidth) ctx.drawImage(shell, -108, -199, 216, 216);
+  else drawGlassFront(ctx);
+  drawGraduations(ctx);
   ctx.restore();
 }
 
 function drawRod(ctx, position, progress, time) {
   const depth = smoothstep(0, .16, progress) * (1 - smoothstep(.83, 1, progress));
-  const sweep = Math.sin(time * 17) * 19 * depth;
+  const sweep = Math.sin(time * 5.8) * 21 * depth;
   const top = { x: position.x + 27 + sweep * .42, y: position.y - 184 - 39 * depth };
   const tip = { x: position.x - 13 + sweep, y: position.y - 170 + 147 * depth };
   ctx.lineCap = "round";
-  for (const [offset, width, color] of [[0, 5.7, "#183f4280"], [0, 4.2, "#b4e0dfb5"], [-.9, 1.15, "#f2ffffc5"]]) {
+  for (const [offset, width, color] of [[0, 4.8, "#223c398c"], [0, 3.5, "#a6bdb68f"], [-.85, .72, "#ebf5e99c"]]) {
     ctx.beginPath();
     ctx.moveTo(top.x + offset, top.y);
     ctx.lineTo(tip.x + offset, tip.y);
@@ -294,30 +342,48 @@ function drawRod(ctx, position, progress, time) {
 
 function drawWaterStream(ctx, start, end, amount, murk, time) {
   const gap = Math.max(2, end.y - start.y);
-  const bent = start.x + (end.x - start.x) * .85;
-  const width = 1.4 + Math.sqrt(amount) * .64;
-  const dirty = clamp(murk * 16, 0, .91);
+  const radius = .28 + Math.sqrt(amount) * .49;
+  const dirty = clamp(murk * 14, 0, 1);
+  const segments = 16;
+  const contour = Array.from({ length: segments + 1 }, (_, segment) => {
+    const fraction = segment / segments;
+    const wobble = Math.sin(12 * fraction - 7 * time) * .32 * fraction;
+    const x = start.x + (end.x - start.x) * fraction + wobble;
+    const y = start.y + gap * fraction * (.09 + .91 * fraction);
+    return { x, y, radius: radius / (1 + 2.2 * fraction) ** .44 };
+  });
+  ctx.beginPath();
+  ctx.moveTo(contour[0].x - radius, start.y);
+  for (const point of contour) ctx.lineTo(point.x - point.radius, point.y);
+  for (let i = contour.length - 1; i >= 0; i--) {
+    const point = contour[i];
+    ctx.lineTo(point.x + point.radius, point.y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = linear(ctx, 0, start.y, 0, start.y + gap, [
+    [0, dirty > .15 ? "#b79b77c4" : "#b6c8bfbd"],
+    [.35, dirty > .15 ? "#b79a76b7" : "#a6bbbb84"],
+    [1, dirty > .15 ? "#bc9e73a4" : "#cedcd392"],
+  ]);
+  ctx.fill();
 
   ctx.beginPath();
-  ctx.moveTo(start.x, start.y);
-  ctx.bezierCurveTo(bent, start.y + gap * .04, end.x - 3, end.y - gap * .3, end.x, end.y);
-  ctx.lineWidth = width;
-  ctx.lineCap = "round";
-  ctx.strokeStyle = dirty > .16 ? "rgba(202,168,123," + (.5 + dirty * .43) + ")" : "#a8dedcad";
+  ctx.moveTo(start.x - radius * .53, start.y);
+  for (const point of contour) ctx.lineTo(point.x - point.radius * .53, point.y);
+  ctx.lineWidth = clamp(radius * .3, .38, .85);
+  ctx.strokeStyle = "#f5faf0a8";
   ctx.stroke();
 
-  ctx.beginPath();
-  ctx.moveTo(start.x - width * .24, start.y + 1);
-  ctx.bezierCurveTo(bent - 1, start.y + gap * .05, end.x - 5, end.y - gap * .29, end.x - 1, end.y);
-  ctx.lineWidth = Math.max(.8, width * .19);
-  ctx.strokeStyle = "#f1fffd9e";
-  ctx.stroke();
-
-  const length = 7 + (time * 6 % 1) * 14;
-  oval(ctx, end.x, end.y + .4, length, Math.max(.7, length * .14));
-  ctx.strokeStyle = "#e3fffc89";
-  ctx.lineWidth = .8;
-  ctx.stroke();
+  if (amount < 1) return;
+  for (const offset of [0, .47]) {
+    const ripple = (time * 3.7 + offset) % 1;
+    const length = 3 + ripple * (5 + Math.sqrt(amount) * 1.75);
+    ctx.beginPath();
+    ctx.ellipse(end.x, end.y + .45, length, length * .16, 0, .2, Math.PI - .07);
+    ctx.lineWidth = .6;
+    ctx.strokeStyle = "rgba(230,239,223," + (.52 * (1 - ripple)) + ")";
+    ctx.stroke();
+  }
 }
 
 function drawPreparation(ctx, position, model, time) {
@@ -331,21 +397,24 @@ function drawPreparation(ctx, position, model, time) {
 
   const level = liquidLevel(model.source.water + totalSand(model.source) / grainDensity, 0, initialOutline);
   const surface = position.y + level;
-  const opening = position.y + vessel.top;
-  const strength = smoothstep(0, .1, fraction) * (1 - smoothstep(.86, 1, fraction));
+  const strength = 4 * fraction * (1 - fraction);
+  const streamOrigin = { x: position.x - 31, y: -.8 };
   if (action.kind === "water") {
-    if (strength > .01) drawWaterStream(ctx, { x: position.x - 32, y: opening - 67 }, { x: position.x - 13, y: surface }, 82 * strength, 0, time);
+    if (strength > .025) {
+      drawWaterStream(ctx, streamOrigin, { x: position.x - 13, y: surface }, 52 * strength, 0, time);
+    }
     return;
   }
 
   ctx.save();
   ctx.globalAlpha = strength;
   for (const dot of doseDots) {
-    const fall = (dot.y + time * 3.7) % 1;
-    const y = opening - 63 + fall ** 1.42 * (surface - opening + 63);
-    const x = position.x - 16 + (dot.x - .5) * (24 - fall * 9);
-    ctx.fillStyle = dot.glint > .45 ? "#f6d7a8" : "#a87b53";
-    ctx.fillRect(x, y, 1.3 + dot.glint, 1.2 + dot.glint * 1.4);
+    const fall = (dot.y + time * 2.3) % 1;
+    const y = streamOrigin.y + fall ** 1.65 * (surface - streamOrigin.y);
+    const center = streamOrigin.x + 18 * fall;
+    const x = center + (dot.x - .5) * (17 - fall * 5);
+    ctx.fillStyle = dot.glint > .48 ? "#e5c59f" : "#977049";
+    ctx.fillRect(x, y, .55 + dot.glint * .85, .8 + dot.glint * 1.35);
   }
   ctx.restore();
 }
@@ -362,10 +431,18 @@ function beakerPositions({ benchY, spacing }, angle) {
 }
 
 export class Bench {
-  constructor(canvas) {
+  constructor(canvas, onAssetsReady) {
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
     this.layout = null;
+    this.backdrop = document.createElement("canvas");
+    this.backdrop.width = 0;
+    this.photo = loadAsset("bancada.webp", () => {
+      this.refreshBackdrop();
+      onAssetsReady();
+    });
+    this.glassShell = loadAsset("bequer-borossilicato.webp", onAssetsReady);
+    this.sedimentTexture = loadAsset("sedimento-quartzoso.webp", onAssetsReady);
   }
 
   resize() {
@@ -373,14 +450,34 @@ export class Bench {
     const height = this.canvas.clientHeight;
     if (width === 0 || height === 0 || !this.ctx) return;
     const scene = this.canvas.parentElement;
-    const spacing = Number.parseFloat(getComputedStyle(scene).getPropertyValue("--beaker-spacing")) || defaultSpacing;
+    const style = getComputedStyle(scene);
+    const spacing = Number.parseFloat(style.getPropertyValue("--beaker-spacing")) || defaultSpacing;
+    const photoX = Number.parseFloat(style.backgroundPositionX || "50%") / 100;
+    const photoY = Number.parseFloat(style.backgroundPositionY || "62%") / 100;
     const framingWidth = 2 * (spacing + lip.x + edgeClearance);
     const scale = Math.min(width / framingWidth, height / framingHeight);
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     this.canvas.width = Math.round(width * dpr);
     this.canvas.height = Math.round(height * dpr);
-    this.layout = { width, scale, dpr, spacing, benchY: height * .84 / scale };
+    this.layout = { width, height, scale, dpr, spacing, photoX, photoY, benchY: height * .84 / scale };
     scene.style.setProperty("--label-width", 4 * spacing * scale + "px");
+    this.refreshBackdrop();
+  }
+
+  refreshBackdrop() {
+    if (!this.layout || !this.photo?.naturalWidth) return;
+    const { width, height, photoX, photoY } = this.layout;
+    const scale = Math.max(width / this.photo.naturalWidth, height / this.photo.naturalHeight);
+    const photoWidth = this.photo.naturalWidth * scale;
+    const photoHeight = this.photo.naturalHeight * scale;
+    this.backdrop.width = width;
+    this.backdrop.height = height;
+    const ctx = this.backdrop.getContext("2d");
+    ctx.drawImage(this.photo, (width - photoWidth) * photoX, (height - photoHeight) * photoY, photoWidth, photoHeight);
+    ctx.fillStyle = linear(ctx, 0, 0, 0, height, [
+      [.05, "#102a2e24"], [.43, "#041b1b17"], [1, "#071e20ab"],
+    ]);
+    ctx.fillRect(0, 0, width, height);
   }
 
   draw(model, time) {
@@ -389,19 +486,20 @@ export class Bench {
     const { width, scale, dpr, spacing, benchY } = layout;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    if (this.backdrop.width) ctx.drawImage(this.backdrop, 0, 0, this.canvas.width, this.canvas.height);
     ctx.setTransform(scale * dpr, 0, 0, scale * dpr, width * dpr / 2, 0);
     ctx.lineCap = "round";
 
     const { source, receiver, spout } = beakerPositions(layout, model.angle);
     drawShadow(ctx, -spacing, benchY, smoothstep(0, 48, model.angle));
     drawShadow(ctx, receiver.x, benchY, 0);
-    drawBeaker(ctx, receiver, model.receiver, "B", time);
+    drawBeaker(ctx, receiver, model.receiver, time, this);
     if (model.flowing) {
       const inlet = liquidLevel(model.receiver.water + totalSand(model.receiver) / grainDensity, 0, initialOutline);
       const end = { x: clamp(spout.x + 15, receiver.x - 45, receiver.x + 45), y: receiver.y + inlet };
       drawWaterStream(ctx, spout, end, model.flow, model.flowSand, time);
     }
-    drawBeaker(ctx, source, model.source, "A", time);
+    drawBeaker(ctx, source, model.source, time, this);
     drawPreparation(ctx, source, model, time);
   }
 
