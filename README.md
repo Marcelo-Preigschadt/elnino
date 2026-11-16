@@ -1,28 +1,32 @@
-# Bancada de Química · Decantação
+# ETA Virtual
 
-Laboratório virtual de separação sólido-líquido para uso em aula. O aluno prepara uma mistura de 200 mL de água e 20 g de areia fina com silte, observa a formação do sedimento e ajusta a inclinação para coletar o sobrenadante em outro béquer. A bancada mede o tempo de repouso, o volume de água coletada e a massa de sólidos transferida.
+Simulação de uma estação convencional de tratamento de água, da leitura inicial do pH à saída do decantador. O aluno opera a sonda, escolhe o corretor, aplica doses incrementais de policloreto de alumínio (PAC), acompanha a galeria de floculação e coleta uma amostra do clarificado. O campo microscópico permite observar a superfície, o meio e o fundo do decantador.
 
-[Laboratório publicado](https://marcelo-preigschadt.github.io/elnino/)
+[Estação publicada](https://marcelo-preigschadt.github.io/elnino/)
 
 ## Executar localmente
 
-Sirva a raiz para que o navegador carregue os módulos JavaScript.
+Sirva a raiz por HTTP com o comando abaixo e abra http://localhost:8080/.
 
 ~~~sh
 python3 -m http.server 8080
 ~~~
 
-Acesse http://localhost:8080.
+## Cenário didático
 
-## Modelo da bancada
+A água bruta parte de 120 uT, pH 7,20, alcalinidade de 22 mg/L como CaCO₃ e temperatura de 25 °C. A solução de PAC do cenário tem 10% em Al₂O₃ e basicidade de 50%. As doses virtuais são expressas em mg/L do produto assumido.
 
-- **model.js** representa areia quartzosa de 0,160 mm e 0,078 mm e silte quartzoso de 0,041 mm e 0,022 mm em água a 20 °C. As frações do modelo são 38%, 25%, 22% e 15% em massa. A areia desce primeiro e o silte mantém turbidez visível durante o repouso. O modelo conserva a massa de sólidos entre suspensão, leito e recipiente de coleta.
-- **vessel.js** aproxima o béquer por um tronco de cone e integra seções circulares para calcular o volume retido quando inclinado. O nível do líquido permanece horizontal no referencial da bancada.
-- **bench.js** combina um render óptico de vidro borossilicato com a refração do fundo, a turbidez, o menisco e a textura do sedimento. **app.js** liga o modelo ao roteiro e aos controles.
-- A vazão diminui à medida que o nível do líquido chega ao bico. O béquer avança em direção à inclinação solicitada conforme o líquido escoa. A vazão, a porosidade do leito e o arraste usam aproximações didáticas.
+- **Ajuste de pH.** O modelo resolve o equilíbrio carbonático após a adição de hidróxido de cálcio, carbonato de sódio, ácido clorídrico ou PAC. A barrilha fornece carbono inorgânico e alcalinidade. A cal hidratada acrescenta alcalinidade. O ácido clorídrico e a hidrólise do PAC consomem alcalinidade. Cada adição exige uma nova leitura após a mistura.
+- **Coagulação e floculação.** A eficiência da amostra reage à dose acumulada e ao pH. A mistura rápida dura 45 segundos de processo e a agitação na galeria pode chegar a 25 minutos.
+- **Decantação.** Uma parcela representativa da água é acompanhada por até duas horas de processo. As partículas caem em ritmos diferentes e a fração sedimentada aparece no fundo. A turbidez estimada representa a fração média de sólidos em suspensão. A saída superficial destina-se às etapas seguintes de filtração e desinfecção.
+- **Observação.** As unidades foram renderizadas em 3D e recebem água, flocos, lodo e instrumentos animados em Canvas. O campo microscópico usa a concentração simulada de cada camada, com dimensões ilustrativas. O seletor permite demonstração acelerada com fator explícito ou tempo real.
 
-[Introdução Clássica à Química Geral, IFRN, seção sobre decantação](https://docentes.ifrn.edu.br/albinonunes/disciplinas/quimica-experimental/livro-de-quimica-geral-grupotche-quimica/)
+**treatment.js** contém o modelo de tratamento, **station-view.js** compõe as vistas e **app.js** opera os controles e as medições.
 
-[Ferguson e Church, 2004, equação de velocidade de sedimentação](https://durham-repository.worktribe.com/output/1597463/a-simple-universal-equation-for-grain-settling-velocity)
+## Referências
 
-[Serviço Geológico dos Estados Unidos, classificação granulométrica de Wentworth](https://www.usgs.gov/publications/a-visual-basic-program-classify-sediments-based-gravel-sand-silt-clay-ratios)
+- [COMUSA · Etapas do tratamento de água](https://www.comusa.rs.gov.br/index.php/saneamento/tratamentoagua)
+- [Funasa · Manual de Saneamento](https://bvsms.saude.gov.br/bvs/publicacoes/funasa/capitulo_2.pdf)
+- [AGENERSA · Uso de PAC e ensaio de jarros](https://www.rj.gov.br/agenersa/sites/default/files/arquivos_paginas_basicas/RF%20177-2024.pdf)
+- [NHMRC · Policloreto de alumínio](https://guidelines.nhmrc.gov.au/australian-drinking-water-guidelines/part-5/treatment-chemicals/polyaluminium-chloride)
+- [USGS · Alcalinidade e equilíbrio carbonático](https://water.usgs.gov/water-resources/memos/memo.php?id=2098)

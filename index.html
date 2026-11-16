@@ -3,164 +3,220 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f7f8f3">
-  <meta name="description" content="Laboratório interativo de química. Observe a sedimentação de areia e silte em água e separe o sobrenadante por decantação.">
-  <title>Decantação | Bancada de Química</title>
+  <meta name="theme-color" content="#f6f8f6">
+  <meta name="description" content="Estação de tratamento de água virtual. Aplique policloreto de alumínio, observe a formação de flocos e acompanhe a decantação.">
+  <title>Estação de Tratamento de Água | ETA Virtual</title>
   <link rel="icon" href="./assets/favicon.png" type="image/png">
-  <link rel="preload" href="./assets/bequer-borossilicato.webp" as="image" type="image/webp">
-  <link rel="stylesheet" href="./styles.css?v=3">
-  <script type="module" src="./app.js?v=3"></script>
+  <link rel="preload" href="./assets/eta/coagulacao.webp" as="image" type="image/webp">
+  <link rel="stylesheet" href="./styles.css?v=4">
+  <script type="module" src="./app.js?v=4"></script>
 </head>
 <body>
-  <a class="skip-link" href="#experimento">Ir para o experimento</a>
+  <a class="skip-link" href="#estacao">Ir para a estação</a>
   <header class="site-header">
     <div class="wrap header-inner">
-      <a class="brand" href="./" aria-label="Bancada de Química, início">
-        <span class="brand-mark" aria-hidden="true"><i class="icon icon-flask"></i></span>
-        <span>Bancada de Química</span>
+      <a class="brand" href="./" aria-label="ETA Virtual, início">
+        <span class="brand-mark" aria-hidden="true"><i></i></span>
+        <span>ETA Virtual</span>
       </a>
-      <nav aria-label="Laboratório">
+      <nav aria-label="Estação">
         <a class="theory-link" href="#observar">O que observar</a>
-        <button class="button reset-button" id="reset" type="button">
-          <span class="icon icon-reset" aria-hidden="true"></span>Reiniciar
-        </button>
+        <button class="button button-secondary reset" id="reset" type="button">Reiniciar</button>
       </nav>
     </div>
   </header>
 
-  <main class="wrap" id="experimento">
+  <main class="wrap" id="estacao">
     <header class="intro">
-      <div>
-        <p class="eyebrow">Separação de misturas</p>
-        <h1>Decantação</h1>
-        <p class="intro-copy">Deixe a areia e o silte sedimentarem. Transfira o líquido sobrenadante para outro béquer.</p>
+      <div class="intro-title">
+        <h1>Estação de tratamento de água</h1>
+        <p>Meça o pH, dose o PAC e acompanhe a formação e a sedimentação dos flocos.</p>
       </div>
-      <div class="materials" aria-label="Materiais da prática">
-        <div><span class="swatch swatch-water" aria-hidden="true"></span> Água <strong>200 mL</strong></div>
-        <div><span class="swatch swatch-sand" aria-hidden="true"></span> Areia e silte <strong>20 g</strong></div>
-      </div>
+      <dl class="water-inlet" aria-label="Condição inicial da água">
+        <div><dt>Água bruta</dt><dd><span data-raw-turbidity>120</span> <small>uT</small></dd></div>
+        <div><dt>Alcalinidade</dt><dd><span id="raw-alkalinity">22</span> <small>mg/L CaCO₃</small></dd></div>
+      </dl>
     </header>
 
-    <div class="lab-layout">
-      <section class="bench card" aria-labelledby="bench-title">
+    <div class="station-layout">
+      <section class="card basin" aria-labelledby="basin-title">
         <header class="card-header">
-          <h2 id="bench-title">Bancada experimental</h2>
-          <span class="glass-capacity">Béqueres de 250 mL</span>
+          <h2 id="basin-title">Câmara de mistura rápida</h2>
+          <span class="cutaway-label">Vista em corte</span>
         </header>
-
-        <div class="scene" id="scene">
-          <canvas id="glassware" role="img" aria-label="Dois béqueres de vidro vazios sobre a bancada. A é o béquer de preparo e B é o de coleta."></canvas>
-          <div class="scene-state" id="scene-state"><span aria-hidden="true"></span><span id="scene-state-text">Bancada pronta</span></div>
-          <div class="vessel-labels" aria-hidden="true">
-            <span><b>A</b> Preparo</span>
-            <span><b>B</b> Coleta</span>
+        <div class="observation-tools" id="observation-tools" hidden>
+          <div class="view-selector" role="group" aria-label="Vista do decantador">
+            <button type="button" id="view-tank" aria-pressed="true">Tanque</button>
+            <button type="button" id="view-micro" aria-pressed="false">Microscópio</button>
           </div>
+          <label class="sample-depth" id="depth-control" hidden>
+            <span>Camada</span>
+            <select id="sample-depth">
+              <option value="surface">Superfície</option>
+              <option value="middle">Meio</option>
+              <option value="bottom">Fundo</option>
+            </select>
+          </label>
         </div>
-
-        <dl class="measurements" aria-label="Medições da prática">
-          <div><dt>Tempo de repouso</dt><dd id="rest-time">00:00</dd></div>
-          <div><dt>Água coletada</dt><dd><span id="water-value">0</span> <small>mL</small></dd></div>
-          <div><dt>Sólidos na coleta</dt><dd><span id="sand-value">0,00</span> <small>g</small></dd></div>
+        <div class="scene" id="scene">
+          <canvas id="treatment-scene" role="img" aria-label="Câmara de mistura rápida com água bruta e tubulação de dosagem de policloreto de alumínio."></canvas>
+          <div class="scene-status"><i aria-hidden="true"></i><span id="scene-status">Água bruta na câmara</span></div>
+          <span class="scene-caption" id="scene-caption">Entrada de água bruta</span>
+        </div>
+        <dl class="measurements" aria-label="Medições simuladas da estação">
+          <div><dt>Tempo da etapa</dt><dd id="process-time">00:00</dd></div>
+          <div><dt>Turbidez estimada</dt><dd><span id="turbidity">120</span> <small>uT</small></dd></div>
+          <div><dt>Sólidos no fundo</dt><dd id="solids">0%</dd></div>
         </dl>
+        <div class="scene-legend" id="settling-legend" hidden>
+          <span><i class="legend-water"></i>Sobrenadante</span>
+          <span><i class="legend-floc"></i>Flocos em suspensão</span>
+          <span><i class="legend-sludge"></i>Lodo no fundo</span>
+        </div>
       </section>
 
-      <aside class="protocol card" aria-labelledby="protocol-title">
-        <header class="card-header"><h2 id="protocol-title">Roteiro da prática</h2></header>
-        <ol class="steps" aria-label="Etapas do procedimento">
-          <li id="step-prepare" aria-current="step">
-            <span class="step-number" aria-hidden="true">1</span>
-            <div><strong>Preparo</strong><small>Monte a mistura</small></div>
-          </li>
-          <li id="step-settle">
-            <span class="step-number" aria-hidden="true">2</span>
-            <div><strong>Sedimentação</strong><small>Deixe os sólidos se depositarem</small></div>
-          </li>
-          <li id="step-decant">
-            <span class="step-number" aria-hidden="true">3</span>
-            <div><strong>Decantação</strong><small>Transfira o sobrenadante</small></div>
-          </li>
+      <aside class="card operation" aria-labelledby="operation-title">
+        <header class="card-header"><h2 id="operation-title">Operação da estação</h2></header>
+        <ol class="stages" aria-label="Etapas da clarificação">
+          <li id="stage-coagulation" aria-current="step"><span class="stage-number" aria-hidden="true">1</span><span><strong>Coagulação</strong><small>pH, dosagem de PAC e mistura rápida</small></span></li>
+          <li id="stage-flocculation"><span class="stage-number" aria-hidden="true">2</span><span><strong>Floculação</strong><small>Agitação lenta na galeria</small></span></li>
+          <li id="stage-settling"><span class="stage-number" aria-hidden="true">3</span><span><strong>Decantação</strong><small>Sedimentação e coleta na superfície</small></span></li>
         </ol>
 
-        <div class="protocol-action">
-          <section id="controls-prepare">
-            <h3 id="prepare-title" tabindex="-1">Monte a mistura</h3>
-            <p id="prepare-help">Adicione água ao béquer A. Em seguida, acrescente a mistura de areia e silte.</p>
-            <button class="button button-primary" id="prepare-action" type="button">
-              <span class="icon icon-add" id="prepare-icon" aria-hidden="true"></span>
-              <span id="prepare-action-label">Adicionar água</span>
-              <small id="prepare-dose">200 mL</small>
-            </button>
+        <div class="operation-content">
+          <section id="panel-dose">
+            <h3 id="heading-dose" tabindex="-1">Meça o pH e dose o PAC</h3>
+            <p>Policloreto de alumínio (PAC)</p>
+            <div class="ph-meter">
+              <div class="meter-display">
+                <span>pH</span>
+                <output id="ph-value" aria-label="Último pH medido">—</output>
+              </div>
+              <div class="meter-details">
+                <strong id="ph-state">Aguardando medição</strong>
+                <span>PAC acumulado <b id="total-dose">0 mg/L</b></span>
+              </div>
+            </div>
+            <button type="button" class="button button-primary" id="measure-ph">Medir pH da água bruta</button>
+            <details class="correction-panel" id="correction-panel" hidden>
+              <summary>Corrigir pH</summary>
+              <fieldset id="correction-fields" aria-label="Adicionar corretor de pH">
+                <label for="corrector">Corretor</label>
+                <select id="corrector">
+                  <option value="lime">Cal hidratada · elevar</option>
+                  <option value="soda">Barrilha · elevar</option>
+                  <option value="acid">Ácido clorídrico · reduzir</option>
+                </select>
+                <label for="correction-dose">Dose simulada (mg/L)</label>
+                <input type="number" id="correction-dose" min="0.5" max="12" step="0.5" value="1" inputmode="decimal">
+                <button type="button" class="button button-secondary" id="apply-correction">Aplicar correção</button>
+              </fieldset>
+            </details>
+            <div class="dose-controls" id="dose-controls">
+              <div class="dose-control">
+                <label for="dose">Dose adicional simulada</label>
+                <output id="dose-value" for="dose">10 mg/L</output>
+                <input type="range" id="dose" min="1" max="60" step="1" value="10" disabled>
+                <span aria-hidden="true">1 mg/L</span><span id="dose-upper-bound" aria-hidden="true">60 mg/L</span>
+              </div>
+              <button type="button" class="button button-secondary" id="apply-dose" disabled>Adicionar PAC</button>
+            </div>
+            <p class="dose-help" id="dose-help">Meça o pH da água bruta para começar.</p>
+            <div class="phase-progress" id="mix-progress" hidden>
+              <label for="coagulation-progress">Mistura</label><span id="coagulation-percent">0%</span>
+              <progress id="coagulation-progress" max="100" value="0"></progress>
+            </div>
+            <button type="button" class="button button-primary next-step" id="to-flocculation" disabled hidden>Enviar ao floculador</button>
           </section>
 
-          <section id="controls-settle" hidden>
-            <h3 id="settle-title" tabindex="-1">Observe a deposição</h3>
-            <p>Observe o líquido clarear de cima para baixo. Nesta mistura, acompanhe a clarificação por cerca de dois minutos antes de verter.</p>
-            <div class="sediment-progress">
-              <label for="settled-progress">Sólidos depositados</label>
-              <span id="settled-percent">0%</span>
-              <progress id="settled-progress" max="100" value="0"></progress>
+          <section id="panel-flocculation" hidden>
+            <h3 id="heading-flocculation" tabindex="-1">Observe os flocos crescerem</h3>
+            <p id="flocculation-help">Na galeria, a água passa pela agitação lenta. Observe como os flocos crescem ao longo do contato.</p>
+            <div class="phase-progress">
+              <label for="flocculation-progress">Tempo no floculador</label><span id="flocculation-percent">0%</span>
+              <progress id="flocculation-progress" max="100" value="0"></progress>
             </div>
-            <button class="button button-primary" id="start-decant" type="button">
-              <span class="icon icon-arrow" aria-hidden="true"></span>Iniciar decantação
-            </button>
+            <button type="button" class="button button-primary next-step" id="to-settling" disabled>Enviar ao decantador</button>
           </section>
 
-          <section id="controls-decant" hidden>
-            <h3 id="decant-title" tabindex="-1">Incline o béquer A</h3>
-            <p id="decant-help">Arraste o béquer ou use o controle. Aumente o ângulo aos poucos e observe o sedimento.</p>
-            <div class="angle-control">
-              <label for="angle">Inclinação</label>
-              <output for="angle" id="angle-readout">0°</output>
-              <input id="angle" type="range" min="0" max="84" step="1" value="0" aria-valuetext="0 graus">
-              <span aria-hidden="true">Em pé</span><span aria-hidden="true">Mais inclinado</span>
+          <section id="panel-settling" hidden>
+            <h3 id="heading-settling" tabindex="-1">Acompanhe a decantação</h3>
+            <p id="settling-help">Observe os flocos descendo e a camada superior clareando. Use o microscópio para comparar as camadas.</p>
+            <div class="phase-progress">
+              <label for="settling-progress">Tempo no decantador</label><span id="settling-percent">0%</span>
+              <progress id="settling-progress" max="100" value="0"></progress>
             </div>
-            <div class="decant-buttons">
-              <button class="button button-secondary" id="stop-flow" type="button">Voltar à vertical</button>
-              <button class="button button-primary" id="finish" type="button" disabled>Ver resultado</button>
-            </div>
+            <button type="button" class="button button-primary next-step" id="take-sample" disabled>Coletar amostra da saída</button>
           </section>
 
-          <section id="controls-result" hidden>
-            <h3 id="result-title" tabindex="-1">Resultado da prática</h3>
-            <p id="result-feedback"></p>
-            <p class="result-detail" id="result-detail"></p>
-            <button class="button button-primary" id="repeat" type="button">
-              <span class="icon icon-reset" aria-hidden="true"></span>Fazer outra tentativa
-            </button>
+          <section id="panel-result" hidden>
+            <h3 id="heading-result" tabindex="-1">Amostra da saída</h3>
+            <p id="sample-note"></p>
+            <dl class="sample-readings">
+              <div><dt>Água bruta</dt><dd id="sample-inlet">120 uT</dd></div>
+              <div><dt>Água clarificada</dt><dd id="sample-outlet"></dd></div>
+              <div><dt>Redução de turbidez</dt><dd id="sample-reduction"></dd></div>
+            </dl>
+            <button type="button" class="button button-primary" id="repeat">Fazer nova dosagem</button>
           </section>
+
+          <details class="ph-history" id="ph-history" hidden>
+            <summary>Histórico de leituras</summary>
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th scope="col">Após</th><th scope="col">PAC (mg/L)</th><th scope="col">pH</th></tr></thead>
+                <tbody id="ph-rows"></tbody>
+              </table>
+            </div>
+          </details>
+          <div class="timing" id="timing">
+            <label for="speed">Ritmo</label>
+            <select id="speed">
+              <option value="demo">Demonstração</option>
+              <option value="real">Tempo real</option>
+            </select>
+            <button class="button button-secondary pause" id="pause" type="button" hidden>Pausar</button>
+            <p id="speed-explanation">Mistura rápida · 3 s de processo por segundo na tela</p>
+          </div>
         </div>
       </aside>
     </div>
 
     <section class="observations" id="observar" aria-labelledby="observation-title">
-      <h2 id="observation-title">O que observar</h2>
+      <h2 id="observation-title">O que acontece com a água</h2>
       <div class="observations-grid">
         <article>
-          <span class="observation-icon sediment-icon" aria-hidden="true"></span>
-          <h3>Sedimento</h3>
-          <p>Em repouso, a gravidade deposita os grãos maiores primeiro. As partículas de silte permanecem mais tempo em suspensão.</p>
+          <h3>Coagulação</h3>
+          <p>O PAC reduz a estabilidade das partículas finas que deixam a água turva. A mistura rápida distribui o produto pelo tanque.</p>
         </article>
         <article>
-          <span class="observation-icon liquid-icon" aria-hidden="true"></span>
-          <h3>Sobrenadante</h3>
-          <p>É a camada líquida acima do sedimento. Ela clareia à medida que os grãos saem de suspensão.</p>
+          <h3>Floculação</h3>
+          <p>A agitação lenta favorece o contato entre partículas. Elas formam flocos que conseguem sedimentar.</p>
         </article>
         <article>
-          <span class="observation-icon tilt-icon" aria-hidden="true"></span>
-          <h3>Controle do fluxo</h3>
-          <p>Ao verter, observe o fundo do béquer A. Deixar um pouco de água ajuda a manter o sedimento no recipiente.</p>
+          <h3>Decantação</h3>
+          <p>Os flocos se depositam e formam lodo. A água clarificada sai pela canaleta superior e segue para filtração e desinfecção.</p>
         </article>
       </div>
     </section>
 
     <footer class="lab-footer">
       <details>
-        <summary>Sobre as medições da simulação</summary>
-        <p>O modelo usa areia fina e silte quartzosos em água a 20 °C. A sedimentação avança em segundos reais com a bancada na tela. O tempo varia com o tamanho dos grãos. A vazão e o arraste seguem aproximações do modelo.</p>
+        <summary>Parâmetros e fontes do modelo</summary>
+        <p>A amostra virtual tem turbidez inicial de 120 uT e alcalinidade de 22 mg/L como CaCO₃. O pH é estimado pelo equilíbrio carbonático a 25 °C, pelo corretor aplicado e pela acidez liberada na hidrólise do PAC. As doses e o campo microscópico pertencem a este modelo didático.</p>
+        <p>O ensaio de jarros permite avaliar, entre outros parâmetros, o pH e a turbidez residual da água captada.</p>
+        <p>O cenário tem 45 segundos de mistura rápida, até 25 minutos de floculação e até duas horas de permanência no decantador. A imagem mostra o movimento de uma parcela representativa da água na unidade.</p>
+        <ul>
+          <li><a href="https://www.comusa.rs.gov.br/index.php/saneamento/tratamentoagua">COMUSA · Etapas do tratamento de água</a></li>
+          <li><a href="https://bvsms.saude.gov.br/bvs/publicacoes/funasa/capitulo_2.pdf">Funasa · Manual de Saneamento</a></li>
+          <li><a href="https://www.rj.gov.br/agenersa/sites/default/files/arquivos_paginas_basicas/RF%20177-2024.pdf">AGENERSA · Uso de PAC e ensaio de jarros em ETA</a></li>
+          <li><a href="https://guidelines.nhmrc.gov.au/australian-drinking-water-guidelines/part-5/treatment-chemicals/polyaluminium-chloride">NHMRC · Hidrólise do policloreto de alumínio</a></li>
+          <li><a href="https://water.usgs.gov/water-resources/memos/memo.php?id=2098">USGS · Alcalinidade e equilíbrio carbonático</a></li>
+        </ul>
       </details>
     </footer>
   </main>
-  <div id="announcement" class="sr-only" role="status" aria-live="polite"></div>
-  <noscript><p class="no-script">Ative o JavaScript no navegador para operar a bancada.</p></noscript>
+  <div class="sr-only" id="announcement" role="status" aria-live="polite"></div>
+  <noscript><p class="no-script">Ative o JavaScript no navegador para operar a estação.</p></noscript>
 </body>
 </html>
