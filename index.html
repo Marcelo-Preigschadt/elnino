@@ -3,337 +3,163 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#041217">
-  <meta name="description" content="Como o El Niño nasce no Pacífico e altera o risco de chuva, enchentes e temporais no Rio Grande do Sul.">
-  <title>El Niño no Rio Grande do Sul — do Pacífico ao nosso território</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=7.1.0">
-  <script src="app.js?v=7.1.0" defer></script>
+  <meta name="theme-color" content="#f7f8f3">
+  <meta name="description" content="Laboratório interativo de química. Separe água e areia por sedimentação e decantação em uma bancada virtual.">
+  <title>Decantação | Bancada de Química</title>
+  <link rel="icon" href="./assets/favicon.png" type="image/png">
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./app.js"></script>
 </head>
 <body>
-  <a class="skip-link" href="#experiencia">Pular para a experiência</a>
-
-  <header class="site-header" id="topo">
-    <a class="brand" href="#topo" aria-label="El Niño — início">
-      <span class="brand-mark" aria-hidden="true"><i></i></span>
-      <span>EL NIÑO</span>
-      <small>EXPERIÊNCIA CLIMÁTICA</small>
-    </a>
-    <nav aria-label="Navegação principal">
-      <a href="#fenomeno">O fenômeno</a>
-      <a href="#impactos">No Rio Grande do Sul</a>
-      <a href="#agir">Como agir</a>
-    </nav>
-    <button class="header-control" id="motion-toggle" type="button" aria-pressed="false">
-      <span class="control-icon" aria-hidden="true"></span>
-      <span class="motion-label">Pausar movimento</span>
-    </button>
+  <a class="skip-link" href="#experimento">Ir para o experimento</a>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="./" aria-label="Bancada de Química, início">
+        <span class="brand-mark" aria-hidden="true"><i class="icon icon-flask"></i></span>
+        <span>Bancada de Química</span>
+      </a>
+      <nav aria-label="Laboratório">
+        <a class="theory-link" href="#observar">O que observar</a>
+        <button class="button reset-button" id="reset" type="button">
+          <span class="icon icon-reset" aria-hidden="true"></span>Reiniciar
+        </button>
+      </nav>
+    </div>
   </header>
 
-  <main>
-    <section class="hero" id="experiencia" aria-labelledby="hero-title">
-      <div class="hero-copy">
-        <p class="eyebrow"><span></span> UMA JORNADA CLIMÁTICA ATÉ O SUL DO BRASIL</p>
-        <h1 id="hero-title">Nasce no Pacífico.<br><em>Chega ao RS.</em></h1>
-        <p class="hero-lead">Veja o oceano aquecer, a atmosfera mudar de engrenagem e o risco atravessar o planeta até alcançar o Rio Grande do Sul.</p>
-
-        <div class="hero-actions">
-          <button class="primary-button" id="play-button" type="button">
-            <span class="play-symbol" aria-hidden="true">▶</span>
-            <span class="play-label">Iniciar o fenômeno</span>
-          </button>
-          <a class="text-link" href="#fenomeno">Entender o caminho <span aria-hidden="true">↓</span></a>
-        </div>
-
-        <div class="hero-facts" aria-label="Fatos principais">
-          <div><small>ORIGEM</small><strong>Pacífico tropical</strong><span>onde o sinal começa</span></div>
-          <div><small>ESCALA</small><strong>Meses e continentes</strong><span>não é um evento de um dia</span></div>
-          <div><small>FOCO</small><strong>Rio Grande do Sul</strong><span>onde o risco ganha forma local</span></div>
-        </div>
-      </div>
-
-      <div class="experience-panel">
-        <div class="panel-head">
-          <div><span class="live-dot" aria-hidden="true"></span><span>EVOLUÇÃO DO EL NIÑO</span></div>
-          <span>PACÍFICO → CIRCULAÇÃO → RIO GRANDE DO SUL</span>
-        </div>
-
-        <div class="globe-stage" id="globe-stage">
-          <canvas id="globe-canvas" aria-label="Evolução térmica do El Niño entre o Pacífico e o Rio Grande do Sul"></canvas>
-          <div class="globe-loading" id="globe-loading" role="status"><span></span>PACÍFICO TROPICAL</div>
-          <div class="webgl-fallback" id="webgl-fallback" hidden>
-            <strong>El Niño e o Sul do Brasil</strong>
-            <span>O fenômeno pode favorecer chuva acima da média e episódios persistentes no Rio Grande do Sul.</span>
-          </div>
-
-          <div class="enso-story-overlay phase-0" id="enso-story-overlay" aria-hidden="true">
-            <div class="phenomenon-caption">
-              <small id="phenomenon-kicker">CONDIÇÃO NEUTRA</small>
-              <strong id="phenomenon-action">Alísios empurram o calor para oeste</strong>
-            </div>
-            <div class="rs-focus-marker" id="rs-focus-marker">
-              <i></i>
-              <span><b>PORTO ALEGRE · RS</b><small>30,03° S · 51,23° O</small></span>
-            </div>
-          </div>
-
-          <div class="map-label pacific-label">PACÍFICO</div>
-
-          <div class="globe-readout" aria-live="polite">
-            <span id="stage-index">01</span>
-            <div><small id="stage-kicker">EQUILÍBRIO</small><strong id="stage-title">O Pacífico antes do El Niño</strong></div>
-          </div>
-
-          <div class="data-hud">
-            <div><span>Anomalia térmica</span><strong id="anomaly-value">+0,0 °C</strong></div>
-            <div><span>Ventos alísios</span><strong id="wind-value">normais</strong></div>
-            <div><span>Convecção</span><strong id="rain-value">oeste</strong></div>
-          </div>
-
-          <div class="layer-controls" role="group" aria-label="Variável climática">
-            <button class="layer-button active" type="button" data-layer="0" aria-pressed="true"><i class="heat-icon"></i> Térmica</button>
-            <button class="layer-button" type="button" data-layer="1" aria-pressed="false"><i class="wind-icon"></i> Ventos</button>
-            <button class="layer-button" type="button" data-layer="2" aria-pressed="false"><i class="rain-icon"></i> Chuva</button>
-          </div>
-
-          <div class="thermal-legend" aria-label="Escala de anomalia de temperatura da superfície do mar">
-            <span>mais frio</span><i></i><span>mais quente</span>
-          </div>
-        </div>
-
-        <div class="timeline">
-          <div class="timeline-top"><span>EVOLUÇÃO DO FENÔMENO</span><output id="timeline-output" for="timeline-range">Fase neutra</output></div>
-          <input id="timeline-range" type="range" min="0" max="100" value="0" aria-label="Avançar a evolução do El Niño">
-          <div class="timeline-marks" aria-hidden="true"><span>Neutro</span><span>Ventos cedem</span><span>Calor avança</span><span>Chuva migra</span><span>Chegada ao RS</span></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="science-section" id="fenomeno" aria-labelledby="science-title">
-      <div class="section-intro reveal">
-        <p class="eyebrow"><span></span> O MECANISMO</p>
-        <h2 id="science-title">Não é só água quente.<br>É uma <em>mudança de engrenagem.</em></h2>
-        <p>O El Niño nasce do acoplamento entre oceano e atmosfera. Uma alteração reforça a outra até mudar a circulação do Pacífico tropical.</p>
-      </div>
-
-      <div class="mechanism reveal">
-        <figure class="ocean-cutaway">
-          <svg viewBox="0 0 1000 560" role="img" aria-labelledby="cutaway-title cutaway-desc">
-            <title id="cutaway-title">Corte do Pacífico tropical durante El Niño</title>
-            <desc id="cutaway-desc">Os ventos alísios enfraquecem, a água quente avança para leste e a termoclina fica mais profunda junto à América do Sul.</desc>
-            <defs>
-              <linearGradient id="sky-gradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stop-color="#d9efeb"/>
-                <stop offset="1" stop-color="#a7d8d7"/>
-              </linearGradient>
-              <linearGradient id="ocean-gradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stop-color="#087789"/>
-                <stop offset=".45" stop-color="#075264"/>
-                <stop offset="1" stop-color="#042c3a"/>
-              </linearGradient>
-              <linearGradient id="warm-gradient" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0" stop-color="#ef4d35"/>
-                <stop offset=".54" stop-color="#ff8a4c"/>
-                <stop offset=".82" stop-color="#ffd56a"/>
-                <stop offset="1" stop-color="#20a8ac"/>
-              </linearGradient>
-              <marker id="arrow-cyan" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
-                <path d="M0 0L9 4.5L0 9Z" fill="#287b82"/>
-              </marker>
-              <marker id="arrow-warm" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
-                <path d="M0 0L9 4.5L0 9Z" fill="#ffbe62"/>
-              </marker>
-            </defs>
-
-            <rect width="1000" height="170" fill="url(#sky-gradient)"/>
-            <rect y="170" width="1000" height="390" fill="url(#ocean-gradient)"/>
-            <path d="M0 170H1000V236C838 212 706 226 574 248C413 275 252 264 0 213Z" fill="url(#warm-gradient)"/>
-            <path class="thermocline-line" d="M26 332C246 390 508 412 751 398C850 392 924 374 974 354"/>
-
-            <g class="trade-arrows" fill="none" stroke="#287b82" stroke-width="2" marker-end="url(#arrow-cyan)">
-              <path d="M310 82H205"/><path d="M550 82H445"/><path d="M790 82H685"/>
-            </g>
-            <g class="warm-arrows" fill="none" stroke="#ffbe62" stroke-width="3" marker-end="url(#arrow-warm)">
-              <path d="M250 205C354 216 447 218 535 210"/>
-              <path d="M525 226C640 230 728 221 824 204"/>
-            </g>
-            <g class="weak-upwelling" fill="none" stroke="#77d9d6" stroke-width="2" stroke-dasharray="7 8" marker-end="url(#arrow-cyan)">
-              <path d="M908 292V215"/>
-            </g>
-
-            <g class="cutaway-labels">
-              <text x="28" y="38">OESTE · INDONÉSIA</text>
-              <text x="972" y="38" text-anchor="end">LESTE · AMÉRICA DO SUL</text>
-              <text x="500" y="121" text-anchor="middle" class="label-dark">VENTOS ALÍSIOS ENFRAQUECEM</text>
-              <text x="565" y="190" text-anchor="middle" class="label-light">ÁGUA QUENTE AVANÇA PARA LESTE</text>
-              <text x="500" y="448" text-anchor="middle" class="label-water">TERMOCLINA MAIS PROFUNDA NO LESTE</text>
-              <text x="900" y="326" text-anchor="middle" class="label-water small">RESSURGÊNCIA REDUZIDA</text>
-            </g>
-          </svg>
-          <figcaption>Água quente avança para leste, a termoclina se aprofunda e a ressurgência enfraquece.</figcaption>
-        </figure>
-
-        <ol class="mechanism-steps">
-          <li><span>01</span><div><strong>Os ventos perdem força</strong><p>Os alísios, que normalmente empurram a superfície para oeste, enfraquecem.</p></div></li>
-          <li><span>02</span><div><strong>O calor se desloca</strong><p>A piscina de água quente se espalha pelo centro e leste do Pacífico.</p></div></li>
-          <li><span>03</span><div><strong>O oceano profundo responde</strong><p>A subida de água fria e rica em nutrientes diminui perto da América do Sul.</p></div></li>
-          <li><span>04</span><div><strong>A chuva muda de endereço</strong><p>A convecção tropical acompanha a água mais quente e altera a circulação atmosférica.</p></div></li>
-        </ol>
-      </div>
-    </section>
-
-    <section class="route-section" aria-labelledby="route-title">
-      <div class="route-copy reveal">
-        <p class="eyebrow"><span></span> DO PACÍFICO AO NOSSO TERRITÓRIO</p>
-        <h2 id="route-title">O fenômeno é distante.<br><em>O impacto pode ser local.</em></h2>
-        <p class="route-lead">Não existe uma “onda de calor” viajando até o RS. O que atravessa o planeta é uma mudança na circulação: o Pacífico reorganiza ventos, jatos e zonas de chuva; no Sul, isso favorece mais transporte de umidade e sistemas meteorológicos persistentes.</p>
-      </div>
-      <ol class="risk-route reveal" aria-label="Caminho do El Niño até o Rio Grande do Sul">
-        <li><span>01</span><strong>Pacífico aquece</strong><small>A água superficial fica acima da média.</small></li>
-        <li><span>02</span><strong>Atmosfera responde</strong><small>Ventos e áreas de chuva se reorganizam.</small></li>
-        <li><span>03</span><strong>Circulação muda</strong><small>Jatos e frentes podem favorecer chuva no Sul.</small></li>
-        <li><span>04</span><strong>Risco se acumula</strong><small>Solo saturado e rios altos ampliam os danos.</small></li>
-      </ol>
-    </section>
-
-    <section class="impact-section" id="impactos" aria-labelledby="impact-title">
-      <div class="impact-heading reveal">
-        <p class="eyebrow"><span></span> RIO GRANDE DO SUL EM FOCO</p>
-        <h2 id="impact-title">Quando chove demais,<br><em>o território responde.</em></h2>
-        <p>Os registros abaixo conectam três escalas: a atmosfera vista por satélite, a água acumulada nas bacias e o dano observado nas cidades. El Niño aumenta a probabilidade; frentes, ciclones, umidade e vulnerabilidade territorial definem cada episódio.</p>
-      </div>
-
-      <div class="impact-metrics reveal" aria-label="Dados observados durante o El Niño de 2023 e 2024">
-        <div><strong>247,1 mm</strong><span>em 24 horas em Cruz Alta, em 4 set. 2023</span></div>
-        <div><strong>2.840 mm</strong><span>acumulados em Passo Fundo durante 2023</span></div>
-        <div><strong>+922 mm</strong><span>acima da média anual em Passo Fundo</span></div>
-      </div>
-
-      <div class="impact-gallery">
-        <article class="evidence-card evidence-card-wide reveal">
-          <figure>
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/05.05.2024_-_Sobrevoo_das_%C3%A1reas_afetadas_pelas_chuvas_na_Regi%C3%A3o_metropolitana_de_Porto_Alegre.jpg/1280px-05.05.2024_-_Sobrevoo_das_%C3%A1reas_afetadas_pelas_chuvas_na_Regi%C3%A3o_metropolitana_de_Porto_Alegre.jpg" alt="Vista aérea de áreas alagadas na Região Metropolitana de Porto Alegre em maio de 2024" loading="lazy" decoding="async">
-            <figcaption>Região Metropolitana de Porto Alegre, 5 mai. 2024 · Ricardo Stuckert/PR · CC BY-SA 2.0</figcaption>
-          </figure>
-          <div class="evidence-copy">
-            <span class="card-number">01 · ENCHENTES</span>
-            <h3>A chuva deixa de ser apenas tempo ruim.</h3>
-            <p>Quando episódios persistem, o solo perde capacidade de absorção, arroios transbordam e grandes bacias recebem água de muitas cidades ao mesmo tempo. O resultado pode ser alagamento urbano, inundação e deslizamento.</p>
-            <a href="https://commons.wikimedia.org/wiki/File:05.05.2024_-_Sobrevoo_das_%C3%A1reas_afetadas_pelas_chuvas_na_Regi%C3%A3o_metropolitana_de_Porto_Alegre.jpg" target="_blank" rel="noopener">Ver registro e licença ↗</a>
-          </div>
-        </article>
-
-        <article class="evidence-card reveal">
-          <figure>
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/20/Temporal_no_meio_do_mar.JPG/1280px-Temporal_no_meio_do_mar.JPG" alt="Nuvens escuras de temporal avançando sobre a Praia do Cassino, em Rio Grande" loading="lazy" decoding="async">
-            <figcaption>Praia do Cassino, Rio Grande · Mauren da Silva Rodrigues · CC BY-SA 3.0</figcaption>
-          </figure>
-          <div class="evidence-copy">
-            <span class="card-number">02 · CHUVA E TEMPORAIS</span>
-            <h3>O temporal é o efeito visível.</h3>
-            <p>El Niño pode favorecer chuva acima da média no RS. A tempestade concreta depende também de frentes, jatos de baixos níveis, umidade, instabilidade e das condições do Atlântico.</p>
-            <a href="https://commons.wikimedia.org/wiki/File:Temporal_no_meio_do_mar.JPG" target="_blank" rel="noopener">Ver registro e licença ↗</a>
-          </div>
-        </article>
-
-        <article class="evidence-card reveal">
-          <figure>
-            <img src="https://www.estado.rs.gov.br/upload/recortes/201706/25023209_368010_GD.jpg" alt="Equipes da Defesa Civil avaliam danos deixados por tornado em Canela, no Rio Grande do Sul" loading="lazy" decoding="async">
-            <figcaption>Canela, jul. 2010 · Itamar Aguiar/Palácio Piratini</figcaption>
-          </figure>
-          <div class="evidence-copy">
-            <span class="card-number">03 · TORNADOS</span>
-            <h3>Possível, mas não automático.</h3>
-            <p>El Niño não “cria um tornado” sozinho. Tornados são fenômenos locais, formados em tempestades com forte instabilidade e mudança do vento com a altura. O estado já registra esse tipo de dano.</p>
-            <a href="https://www.estado.rs.gov.br/prefeito-de-canela-destaca-a-acao-imediata-da-defesa-civil-apos-tornado" target="_blank" rel="noopener">Ver registro oficial ↗</a>
-          </div>
-        </article>
-
-        <article class="evidence-card evidence-card-science reveal">
-          <figure>
-            <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/Storms_over_South_America_on_2_May_2024.png" alt="Imagem de satélite mostrando uma extensa faixa de nuvens sobre o Rio Grande do Sul em 2 de maio de 2024" loading="lazy" decoding="async">
-            <figcaption>Tempestades sobre o Sul da América, 2 mai. 2024 · NASA Worldview · domínio público</figcaption>
-          </figure>
-          <div class="evidence-copy">
-            <span class="card-number">04 · ESCALA ATMOSFÉRICA</span>
-            <h3>O satélite mostra o sistema; não apenas a chuva.</h3>
-            <p>A faixa branca é uma extensa cobertura de nuvens associada à instabilidade sobre o Sul. Na fase final do El Niño forte, o jato subtropical intensificado, a umidade transportada em baixos níveis e frentes quase estacionárias sustentaram chuva por vários dias.</p>
-            <a href="https://commons.wikimedia.org/wiki/File:Storms_over_South_America_on_2_May_2024.png" target="_blank" rel="noopener">Ver imagem e licença ↗</a>
-          </div>
-        </article>
-
-        <article class="evidence-card evidence-card-science reveal">
-          <figure>
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Brazilflooding_tmo_2023170_lrg.jpg/1280px-Brazilflooding_tmo_2023170_lrg.jpg" alt="Imagem de satélite mostrando água barrenta nos rios e na Lagoa dos Patos após as chuvas de junho de 2023" loading="lazy" decoding="async">
-            <figcaption>Cheias e sedimentos no leste do RS, 19 jun. 2023 · NASA Earth Observatory · domínio público</figcaption>
-          </figure>
-          <div class="evidence-copy">
-            <span class="card-number">05 · BACIAS HIDROGRÁFICAS</span>
-            <h3>A água de muitas cidades converge para a mesma bacia.</h3>
-            <p>Na imagem, rios carregados de sedimentos aparecem marrons e lançam água turva na Lagoa dos Patos. O perigo cresce quando chuva sucessiva cai nas cabeceiras, propaga uma onda de cheia e encontra solo já saturado rio abaixo.</p>
-            <a href="https://commons.wikimedia.org/wiki/File:Brazilflooding_tmo_2023170_lrg.jpg" target="_blank" rel="noopener">Ver imagem e licença ↗</a>
-          </div>
-        </article>
-
-        <article class="evidence-card evidence-card-wide evidence-card-observation reveal">
-          <figure>
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Rio_Grande_do_Sul_Before_and_After_Flooding_Rains_%28CIRA_2024-05-06%29.png/1280px-Rio_Grande_do_Sul_Before_and_After_Flooding_Rains_%28CIRA_2024-05-06%29.png" alt="Comparação por satélite evidenciando a expansão das áreas inundadas próximas a Porto Alegre em maio de 2024" loading="lazy" decoding="async">
-            <figcaption>Expansão da inundação na Região Metropolitana, 6 mai. 2024 · NOAA-21/VIIRS · domínio público</figcaption>
-          </figure>
-          <div class="evidence-copy">
-            <span class="card-number">06 · ANTES E DEPOIS</span>
-            <h3>O volume acumulado redesenha a paisagem.</h3>
-            <p>A comparação orbital evidencia a ampliação da lâmina d’água ao redor do Guaíba e da Região Metropolitana. Esse é o encadeamento decisivo: precipitação persistente → rios acima da cota → extravasamento → inundação de áreas urbanas e rurais.</p>
-            <a href="https://commons.wikimedia.org/wiki/File:Rio_Grande_do_Sul_Before_and_After_Flooding_Rains_%28CIRA_2024-05-06%29.png" target="_blank" rel="noopener">Ver imagem e licença ↗</a>
-          </div>
-        </article>
-      </div>
-
-      <aside class="context-note reveal">
-        <strong>El Niño altera a chance, não escreve o roteiro sozinho.</strong>
-        <p>A intensidade do fenômeno, a estação do ano e outros sistemas atmosféricos definem a chuva. Já a ocupação do território, a drenagem, a proteção de encostas, os alertas e a resposta pública ajudam a definir quanto essa chuva vira desastre.</p>
-      </aside>
-    </section>
-
-    <section class="action-section" id="agir" aria-labelledby="action-title">
-      <div class="action-copy reveal">
-        <p class="eyebrow light"><span></span> DA INFORMAÇÃO À AÇÃO</p>
-        <h2 id="action-title">Previsão só protege<br>quando vira <em>decisão.</em></h2>
-        <p>No Rio Grande do Sul, acompanhe a Defesa Civil, conheça os riscos do seu município e combine antes o que fazer em caso de alerta.</p>
-      </div>
-
-      <div class="action-list reveal">
-        <div><span>01</span><p><strong>Ative alertas oficiais</strong>Envie o CEP por SMS para <b>40199</b> e receba avisos da Defesa Civil.</p></div>
-        <div><span>02</span><p><strong>Não atravesse áreas alagadas</strong>A correnteza, buracos e contaminação podem não estar visíveis. Procure uma rota segura.</p></div>
-        <div><span>03</span><p><strong>Planeje antes do extremo</strong>Separe documentos, medicamentos, contatos, lanterna e uma pequena reserva de água.</p></div>
-        <div><span>04</span><p><strong>Em emergência</strong>Ligue para o Corpo de Bombeiros no <b>193</b>. Siga as orientações oficiais para deixar áreas de risco.</p></div>
-      </div>
-    </section>
-
-    <section class="sources-section" aria-labelledby="sources-title">
+  <main class="wrap" id="experimento">
+    <header class="intro">
       <div>
-        <p class="eyebrow"><span></span> BASE CIENTÍFICA</p>
-        <h2 id="sources-title">Consulte as fontes científicas.</h2>
+        <p class="eyebrow">Separação de misturas</p>
+        <h1>Decantação</h1>
+        <p class="intro-copy">Separe água e areia. Deixe os grãos sedimentarem e transfira o líquido sobrenadante para outro béquer.</p>
       </div>
-      <div class="source-links">
-        <a href="https://science.nasa.gov/earth/explore/el-nino/" target="_blank" rel="noopener"><span>NASA Earth Science</span><strong>El Niño explicado ↗</strong></a>
-        <a href="https://portal.inmet.gov.br/noticias/el-ni%C3%B1o-o-que-esperar-e-como-isso-pode-afetar-o-rio-grande-do-sul" target="_blank" rel="noopener"><span>INMET</span><strong>El Niño e o Rio Grande do Sul ↗</strong></a>
-        <a href="https://portal.inmet.gov.br/noticias/el-ni%C3%B1o-saiba-como-foi-a-atua%C3%A7%C3%A3o-do-fen%C3%B4meno-no-brasil" target="_blank" rel="noopener"><span>INMET · dados observados</span><strong>El Niño 2023–2024 ↗</strong></a>
-        <a href="https://defesacivil.rs.gov.br/avisos-e-alertas" target="_blank" rel="noopener"><span>Defesa Civil RS</span><strong>Avisos e alertas oficiais ↗</strong></a>
-        <a href="https://www.gov.br/pt-br/servicos/solicitar-cadastro-para-recebimento-de-avisos-e-alertas-de-desastres" target="_blank" rel="noopener"><span>Defesa Civil Nacional</span><strong>Cadastro gratuito no 40199 ↗</strong></a>
+      <div class="materials" aria-label="Materiais da prática">
+        <div><span class="swatch swatch-water" aria-hidden="true"></span> Água <strong>200 mL</strong></div>
+        <div><span class="swatch swatch-sand" aria-hidden="true"></span> Areia <strong>20 g</strong></div>
       </div>
-      <p class="model-note">El Niño altera probabilidades climáticas em escala sazonal. A intensidade de cada episódio de chuva depende também de frentes, ciclones, jatos atmosféricos, umidade disponível e condições do Atlântico.</p>
+    </header>
+
+    <div class="lab-layout">
+      <section class="bench card" aria-labelledby="bench-title">
+        <header class="card-header">
+          <h2 id="bench-title">Bancada experimental</h2>
+          <span class="glass-capacity">Béqueres de 250 mL</span>
+        </header>
+
+        <div class="scene" id="scene">
+          <canvas id="glassware" role="img" aria-label="Dois béqueres de vidro vazios sobre a bancada. A é o béquer de preparo e B é o de coleta."></canvas>
+          <div class="scene-state" id="scene-state"><span aria-hidden="true"></span><span id="scene-state-text">Bancada pronta</span></div>
+          <div class="vessel-labels" aria-hidden="true">
+            <span><b>A</b> Preparo</span>
+            <span><b>B</b> Coleta</span>
+          </div>
+        </div>
+
+        <dl class="measurements" aria-label="Medições da prática">
+          <div><dt>Tempo de repouso</dt><dd id="rest-time">00:00</dd></div>
+          <div><dt>Água coletada</dt><dd><span id="water-value">0</span> <small>mL</small></dd></div>
+          <div><dt>Areia na coleta</dt><dd><span id="sand-value">0,00</span> <small>g</small></dd></div>
+        </dl>
+      </section>
+
+      <aside class="protocol card" aria-labelledby="protocol-title">
+        <header class="card-header"><h2 id="protocol-title">Roteiro da prática</h2></header>
+        <ol class="steps" aria-label="Etapas do procedimento">
+          <li id="step-prepare" aria-current="step">
+            <span class="step-number" aria-hidden="true">1</span>
+            <div><strong>Preparo</strong><small>Monte a mistura</small></div>
+          </li>
+          <li id="step-settle">
+            <span class="step-number" aria-hidden="true">2</span>
+            <div><strong>Sedimentação</strong><small>Deixe a areia se depositar</small></div>
+          </li>
+          <li id="step-decant">
+            <span class="step-number" aria-hidden="true">3</span>
+            <div><strong>Decantação</strong><small>Transfira o sobrenadante</small></div>
+          </li>
+        </ol>
+
+        <div class="protocol-action">
+          <section id="controls-prepare">
+            <h3 id="prepare-title" tabindex="-1">Monte a mistura</h3>
+            <p id="prepare-help">Adicione água ao béquer A. Em seguida, acrescente a areia.</p>
+            <button class="button button-primary" id="prepare-action" type="button">
+              <span class="icon icon-add" id="prepare-icon" aria-hidden="true"></span>
+              <span id="prepare-action-label">Adicionar água</span>
+              <small id="prepare-dose">200 mL</small>
+            </button>
+          </section>
+
+          <section id="controls-settle" hidden>
+            <h3 id="settle-title" tabindex="-1">Observe a deposição</h3>
+            <p>Compare a aparência do líquido acima do sedimento com a da mistura recém-agitada.</p>
+            <div class="sediment-progress">
+              <label for="settled-progress">Areia depositada</label>
+              <span id="settled-percent">0%</span>
+              <progress id="settled-progress" max="100" value="0"></progress>
+            </div>
+            <button class="button button-primary" id="start-decant" type="button">
+              <span class="icon icon-arrow" aria-hidden="true"></span>Iniciar decantação
+            </button>
+          </section>
+
+          <section id="controls-decant" hidden>
+            <h3 id="decant-title" tabindex="-1">Incline o béquer A</h3>
+            <p id="decant-help">Arraste o béquer ou use o controle. Aumente o ângulo aos poucos e observe o sedimento.</p>
+            <div class="angle-control">
+              <label for="angle">Inclinação</label>
+              <output for="angle" id="angle-readout">0°</output>
+              <input id="angle" type="range" min="0" max="84" step="1" value="0" aria-valuetext="0 graus">
+              <span aria-hidden="true">Em pé</span><span aria-hidden="true">Mais inclinado</span>
+            </div>
+            <div class="decant-buttons">
+              <button class="button button-secondary" id="stop-flow" type="button">Voltar à vertical</button>
+              <button class="button button-primary" id="finish" type="button" disabled>Ver resultado</button>
+            </div>
+          </section>
+
+          <section id="controls-result" hidden>
+            <h3 id="result-title" tabindex="-1">Resultado da prática</h3>
+            <p id="result-feedback"></p>
+            <p class="result-detail" id="result-detail"></p>
+            <button class="button button-primary" id="repeat" type="button">
+              <span class="icon icon-reset" aria-hidden="true"></span>Fazer outra tentativa
+            </button>
+          </section>
+        </div>
+      </aside>
+    </div>
+
+    <section class="observations" id="observar" aria-labelledby="observation-title">
+      <h2 id="observation-title">O que observar</h2>
+      <div class="observations-grid">
+        <article>
+          <span class="observation-icon sediment-icon" aria-hidden="true"></span>
+          <h3>Sedimento</h3>
+          <p>Em repouso, a areia se deposita por ação da gravidade. Os grãos maiores chegam ao fundo primeiro.</p>
+        </article>
+        <article>
+          <span class="observation-icon liquid-icon" aria-hidden="true"></span>
+          <h3>Sobrenadante</h3>
+          <p>É a camada líquida acima do sedimento. Ela clareia à medida que os grãos saem de suspensão.</p>
+        </article>
+        <article>
+          <span class="observation-icon tilt-icon" aria-hidden="true"></span>
+          <h3>Controle do fluxo</h3>
+          <p>Ao verter, observe a areia no fundo do béquer A. Deixar um pouco de água ajuda a manter o sedimento no recipiente.</p>
+        </article>
+      </div>
     </section>
+
+    <footer class="lab-footer">
+      <details>
+        <summary>Sobre as medições da simulação</summary>
+        <p>O modelo usa areia de quartzo com três tamanhos de grão em água a 20 °C. O escoamento e o arraste da areia são aproximados. As massas e os volumes na tela são estimativas do modelo. As partículas estão ampliadas para facilitar a observação.</p>
+      </details>
+    </footer>
   </main>
-
-  <footer>
-    <a class="brand footer-brand" href="#topo"><span class="brand-mark" aria-hidden="true"><i></i></span><span>EL NIÑO</span></a>
-    <p>Entender o risco é o primeiro passo para reduzi-lo.</p>
-    <a href="#topo">Voltar ao topo ↑</a>
-  </footer>
-
-  <noscript><div class="noscript">El Niño reorganiza a circulação atmosférica e pode favorecer chuva acima da média no Rio Grande do Sul.</div></noscript>
+  <div id="announcement" class="sr-only" role="status" aria-live="polite"></div>
+  <noscript><p class="no-script">Ative o JavaScript no navegador para operar a bancada.</p></noscript>
 </body>
 </html>
