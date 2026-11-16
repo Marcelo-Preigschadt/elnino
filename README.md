@@ -1,6 +1,6 @@
 # ETA Virtual
 
-Simulação de uma estação convencional de tratamento de água, da leitura inicial do pH à saída do decantador. O aluno opera a sonda, escolhe o corretor, aplica doses incrementais de policloreto de alumínio (PAC), acompanha a galeria de floculação e coleta uma amostra do clarificado. O campo microscópico permite observar a superfície, o meio e o fundo do decantador.
+Simulação de uma estação convencional de tratamento de água, da leitura inicial do pH à saída do decantador. O aluno opera a sonda, escolhe o corretor, aplica doses incrementais de policloreto de alumínio (PAC), acompanha a galeria de floculação e coleta uma amostra do clarificado. Um toque na água abre o campo microscópico do ponto escolhido.
 
 [Estação publicada](https://marcelo-preigschadt.github.io/elnino/)
 
@@ -19,7 +19,7 @@ A água bruta parte de 120 uT, pH 7,20, alcalinidade de 22 mg/L como CaCO₃ e t
 - **Ajuste de pH.** O modelo resolve o equilíbrio carbonático após a adição de hidróxido de cálcio, carbonato de sódio, ácido clorídrico ou PAC. A barrilha fornece carbono inorgânico e alcalinidade. A cal hidratada acrescenta alcalinidade. O ácido clorídrico e a hidrólise do PAC consomem alcalinidade. Cada adição exige uma nova leitura após a mistura.
 - **Coagulação e floculação.** A eficiência da amostra reage à dose acumulada e ao pH. A mistura rápida dura 45 segundos de processo e a agitação na galeria pode chegar a 25 minutos.
 - **Decantação.** Uma parcela representativa da água é acompanhada por até duas horas de processo. As partículas caem em ritmos diferentes e a fração sedimentada aparece no fundo. A turbidez estimada representa a fração média de sólidos em suspensão. A saída superficial destina-se às etapas seguintes de filtração e desinfecção.
-- **Observação.** As unidades foram renderizadas em 3D e recebem água, flocos, lodo e instrumentos animados em Canvas. O campo microscópico usa a concentração simulada de cada camada, com dimensões ilustrativas. O seletor permite demonstração acelerada com fator explícito ou tempo real.
+- **Observação.** As unidades foram renderizadas em 3D e recebem água, flocos, lodo e instrumentos animados em Canvas. O campo microscópico acompanha a concentração e os flocos na posição e na profundidade selecionadas. No decantador, a vista também mostra o lodo depositado ao selecionar o leito. O seletor permite demonstração acelerada com fator explícito ou tempo real.
 
 **treatment.js** contém o modelo de tratamento, **station-view.js** compõe as vistas e **app.js** opera os controles e as medições.
 

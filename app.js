@@ -1,5 +1,5 @@
 import { Treatment, alkalinity, clamp, correctors, initialIncrement, maxDose, maximumCorrection, process, rawTurbidity } from "./treatment.js?v=4";
-import { StationView, sampleLayers } from "./station-view.js?v=4";
+import { StationView, inspectPoint } from "./station-view.js?v=5";
 
 const byId = (id) => document.getElementById(id);
 const canvas = byId("treatment-scene");
@@ -18,9 +18,8 @@ const measureButton = byId("measure-ph");
 const correctionPanel = byId("correction-panel");
 const correctorControl = byId("corrector");
 const correctionDose = byId("correction-dose");
-const viewTank = byId("view-tank");
-const viewMicro = byId("view-micro");
-const depthControl = byId("sample-depth");
+const microscope = byId("microscope");
+const lens = byId("microscope-scene");
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const decimal = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
 const pHFormat = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -35,7 +34,7 @@ let plant = new Treatment();
 let currentPanel = null;
 let lastReadCount = -1;
 let paused = false;
-let mode = "tank";
+let selectedPoint = null;
 let frameId = 0;
 let previousFrame = 0;
 let lastPaint = -Infinity;
@@ -43,7 +42,7 @@ let lastUi = -Infinity;
 let visualTime = 0;
 let dirty = true;
 let lastStatus = "";
-const view = new StationView(canvas, queue);
+const view = new StationView(canvas, lens, queue);
 
 function setText(element, value) {
   if (element.textContent !== value) element.textContent = value;
@@ -178,7 +177,6 @@ function sceneStatus(panel, reading) {
     return "Água bruta na câmara";
   }
   if (panel === "flocculation") return reading.aggregated < .08 ? "Agitação lenta na galeria" : "Flocos em formação";
-  if (mode === "micro") return "Campo microscópico · " + sampleLayers[depthControl.value].label;
   if (panel === "result") return "Amostra coletada";
   if (!plant.active) return "Fim da observação";
   return reading.retained < .18 ? "Flocos descendo no decantador" : "Lodo acumulando no fundo";
@@ -190,12 +188,7 @@ function updateInterface(reading) {
   renderStage(panel, reading);
   put("basin-title", titles[panel]);
 
-  const observing = panel === "settling" || panel === "result";
-  byId("observation-tools").hidden = !observing;
-  byId("settling-legend").hidden = !observing || mode === "micro";
-  byId("depth-control").hidden = !observing || mode !== "micro";
-  viewTank.setAttribute("aria-pressed", String(mode === "tank"));
-  viewMicro.setAttribute("aria-pressed", String(mode === "micro"));
+  byId("settling-legend").hidden = panel !== "settling" && panel !== "result";
   put("process-time", elapsedLabel(reading.seconds));
   put("turbidity", decimal.format(reading.turbidity));
   put("solids", Math.round(100 * reading.retained) + "%");
@@ -203,12 +196,11 @@ function updateInterface(reading) {
   const status = sceneStatus(panel, reading);
   put("scene-status", status);
   if (lastStatus !== status) {
-    canvas.setAttribute("aria-label", titles[panel] + ". " + status + ".");
+    canvas.setAttribute("aria-label", titles[panel] + ". " + status + ". Selecionar ponto para o microscópio.");
     lastStatus = status;
   }
   const caption = panel === "dose" ? "Câmara de ajuste de pH e dosagem"
     : panel === "flocculation" ? "Água seguindo para o decantador"
-    : mode === "micro" ? "Campo ilustrativo da amostra"
     : "Saída pela canaleta → filtração";
   put("scene-caption", caption);
   scene.toggleAttribute("data-active", (plant.active && !paused) || plant.meterActive);
@@ -218,6 +210,36 @@ function updateInterface(reading) {
   byId("pause").hidden = !plant.active;
   put("pause", paused ? "Retomar" : "Pausar");
   put("speed-explanation", rate === 1 ? "1 s na tela = 1 s de processo" : "1 s na tela = " + rate + " s de processo");
+}
+
+function pointLabel({ x, depth }) {
+  const layer = depth < .28 ? "Superfície" : depth > .72 ? "Fundo" : "Meia profundidade";
+  const side = x < .30 ? "junto à entrada" : x > .70 ? "junto à saída" : "no centro";
+  return layer + " · " + side;
+}
+
+function renderMicroscope(sample) {
+  const location = pointLabel(selectedPoint);
+  const settling = plant.phase === "settling" || plant.phase === "result";
+  const flocs = sample.groups.slice(0, 3).some(({ mass }) => mass >= .025);
+  const status = sample.inSludge ? "Lodo depositado"
+    : settling && flocs ? "Flocos em suspensão"
+    : settling && sample.concentration < .02 ? "Água clarificada"
+    : flocs ? "Flocos em formação" : "Partículas finas";
+  const concentration = Math.round(100 * sample.concentration) + "% da água bruta";
+  put("micro-location", location);
+  put("micro-status", status);
+  put("micro-depth", Math.round(100 * selectedPoint.depth) + "%");
+  put("micro-concentration", concentration);
+  lens.setAttribute("aria-label", location + ". " + status + ". " + concentration + ".");
+}
+
+function openMicroscope(point) {
+  selectedPoint = point;
+  renderMicroscope(inspectPoint(plant.read(), point));
+  microscope.showModal();
+  view.resizeMicroscope();
+  queue();
 }
 
 function clockRate() {
@@ -240,12 +262,16 @@ function frame(now) {
   const moving = (plant.active && !paused) || plant.meterActive;
   const justStopped = wasMoving && !moving;
   const reading = plant.read();
+  const sample = microscope.open && selectedPoint ? inspectPoint(reading, selectedPoint) : null;
   if (dirty || now - lastUi >= 120 || justStopped) {
     updateInterface(reading);
+    if (sample) renderMicroscope(sample);
     lastUi = now;
   }
   if (dirty || (wasMoving && now - lastPaint >= 1000 / 32) || justStopped) {
-    view.draw(plant, reading, mode, depthControl.value, reducedMotion.matches ? 0 : visualTime);
+    const time = reducedMotion.matches ? 0 : visualTime;
+    if (dirty || !sample) view.draw(plant, reading, selectedPoint, time);
+    if (sample) view.drawSample(reading, sample, time);
     lastPaint = now;
   }
   dirty = false;
@@ -256,14 +282,14 @@ function frame(now) {
 function reset() {
   plant = new Treatment();
   paused = false;
-  mode = "tank";
+  selectedPoint = null;
+  if (microscope.open) microscope.close();
   doseControl.max = maxDose;
   doseControl.value = initialIncrement;
   correctionPanel.open = false;
   byId("ph-history").open = false;
   correctionDose.value = "1";
   correctorControl.value = "lime";
-  depthControl.value = "surface";
   previousFrame = 0;
   visualTime = 0;
   lastReadCount = -1;
@@ -273,6 +299,7 @@ function reset() {
 
 const advance = () => {
   plant.advance();
+  if (plant.phase !== "result") selectedPoint = null;
   paused = false;
   queue();
 };
@@ -295,9 +322,36 @@ byId("take-sample").addEventListener("click", advance);
 for (const id of ["reset", "repeat"]) byId(id).addEventListener("click", reset);
 byId("pause").addEventListener("click", () => { paused = !paused; previousFrame = 0; queue(); });
 speedControl.addEventListener("change", () => { previousFrame = 0; queue(); });
-viewTank.addEventListener("click", () => { mode = "tank"; queue(); });
-viewMicro.addEventListener("click", () => { mode = "micro"; queue(); });
-depthControl.addEventListener("change", queue);
+const centerPoint = { x: .5, depth: .5 };
+canvas.addEventListener("click", (event) => {
+  const point = event.detail === 0 ? (selectedPoint ?? centerPoint) : view.pointAt(event.clientX, event.clientY);
+  if (point) openMicroscope(point);
+  else announce("Toque na água dentro do tanque para escolher a amostra.");
+});
+const pointDirections = {
+  ArrowLeft: [-.08, 0], ArrowRight: [.08, 0], ArrowUp: [0, -.08], ArrowDown: [0, .08],
+};
+canvas.addEventListener("keydown", (event) => {
+  const direction = pointDirections[event.key];
+  const point = selectedPoint ?? centerPoint;
+  if (direction) {
+    event.preventDefault();
+    selectedPoint = { x: clamp(point.x + direction[0]), depth: clamp(point.depth + direction[1]) };
+    announce(pointLabel(selectedPoint) + ". Profundidade " + Math.round(100 * selectedPoint.depth) + "%.");
+    queue();
+  } else if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    openMicroscope(point);
+  }
+});
+microscope.addEventListener("close", () => {
+  canvas.focus({ preventScroll: true });
+  queue();
+});
+byId("locate-microscope").addEventListener("click", () => {
+  scene.scrollIntoView({ block: "center" });
+  canvas.focus({ preventScroll: true });
+});
 reducedMotion.addEventListener("change", queue);
 document.addEventListener("visibilitychange", () => {
   previousFrame = 0;
@@ -311,6 +365,14 @@ put("raw-alkalinity", String(alkalinity));
 document.querySelectorAll("[data-raw-turbidity]").forEach((node) => setText(node, String(rawTurbidity)));
 correctionDose.max = String(maximumCorrection);
 doseControl.value = initialIncrement;
-new ResizeObserver(() => { view.resize(); queue(); }).observe(scene);
+const resizeObserver = new ResizeObserver((entries) => {
+  for (const { target } of entries) {
+    if (target === scene) view.resize();
+    else view.resizeMicroscope();
+  }
+  queue();
+});
+resizeObserver.observe(scene);
+resizeObserver.observe(lens.parentElement);
 view.resize();
 queue();

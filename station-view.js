@@ -21,12 +21,6 @@ const basin = [...topFront, ...reversedFloor];
 const waterWidth = waterRight - waterLeft;
 const wetHeight = bottom - waterline;
 
-export const sampleLayers = Object.freeze({
-  surface: { label: "Superfície", depth: .10 },
-  middle: { label: "Meio", depth: .49 },
-  bottom: { label: "Fundo", depth: .88 },
-});
-
 function random(seed) {
   const value = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
   return value - Math.floor(value);
@@ -53,13 +47,24 @@ function linear(ctx, x1, y1, x2, y2, stops) {
   return gradient;
 }
 
-function sampleConcentration({ mass, drop }, depth) {
-  const front = clamp((depth - drop + .025) / .050);
-  return mass * front;
+function columnDrop(drop, x) {
+  const mean = clamp(drop);
+  // The outlet side clears sooner, with the same mean retention as the bulk model.
+  const gradient = .86 * Math.min(mean, 1 - mean);
+  return mean + gradient * (2 * x - 1);
 }
 
-function concentration(reading, depth) {
-  return reading.suspension.reduce((sum, group) => sum + sampleConcentration(group, depth), 0);
+function suspendedFraction(front, depth) {
+  if (front === 0) return 1;
+  if (front === 1) return 0;
+  const spread = Math.min(.035, front, 1 - front);
+  return clamp((depth - front + spread) / (2 * spread));
+}
+
+function concentration(reading, x, depth) {
+  return reading.suspension.reduce((sum, { mass, drop }) => (
+    sum + mass * suspendedFraction(columnDrop(drop, x), depth)
+  ), 0);
 }
 
 function floorAt(x) {
@@ -67,6 +72,32 @@ function floorAt(x) {
   const index = clamp(upper < 0 ? floor.length - 1 : upper, 1, floor.length - 1);
   const [[x0, y0], [x1, y1]] = floor.slice(index - 1, index + 1);
   return y0 + (y1 - y0) * clamp((x - x0) / (x1 - x0));
+}
+
+function sludgeTop(x, retained) {
+  const pooled = .78 + .5 * Math.exp(-(((x - width * .42) / 175) ** 2));
+  return floorAt(x) - 30 * pooled * retained;
+}
+
+export function inspectPoint(reading, point) {
+  const { x, depth } = point;
+  const worldX = waterLeft + waterWidth * x;
+  const worldY = waterline + (floorAt(worldX) - waterline) * depth;
+  const crest = sludgeTop(worldX, reading.retained);
+  const inSludge = reading.retained >= .007 && worldY >= crest;
+  const deposit = reading.retained < .007 ? 0 : clamp((worldY - crest + 6) / 12);
+  const groups = reading.suspension.map(({ mass, drop }) => {
+    const front = columnDrop(drop, x);
+    return { front, mass: mass * suspendedFraction(front, Math.max(.018, depth)) * (1 - deposit) };
+  });
+
+  return {
+    groups,
+    inSludge,
+    deposit,
+    concentration: groups.reduce((sum, { mass }) => sum + mass, 0),
+    seed: Math.round(x * 1000) * 1009 + Math.round(depth * 1000),
+  };
 }
 
 function createFloc(index) {
@@ -95,7 +126,6 @@ function createFloc(index) {
 }
 
 function drawSurface(ctx, reading, time, mixing) {
-  const murk = concentration(reading, .045);
   polygon(ctx, surface);
   ctx.fillStyle = linear(ctx, 0, topBack[0][1], 0, waterline, [
     [0, "rgba(99,139,135,.29)"],
@@ -103,7 +133,13 @@ function drawSurface(ctx, reading, time, mixing) {
     [1, "rgba(112,155,154,.43)"],
   ]);
   ctx.fill();
-  ctx.fillStyle = "rgba(147,121,79," + (.42 * murk) + ")";
+  const haze = ctx.createLinearGradient(waterLeft, 0, waterRight, 0);
+  for (let i = 0; i <= 12; i++) {
+    const x = i / 12;
+    const murk = concentration(reading, x, .018);
+    haze.addColorStop(x, "rgba(147,121,79," + (.42 * murk) + ")");
+  }
+  ctx.fillStyle = haze;
   ctx.fill();
   ctx.save();
   ctx.clip();
@@ -128,9 +164,7 @@ function drawSludge(ctx, reading, texture) {
   const crest = [];
   for (let i = 0; i <= 52; i++) {
     const x = waterLeft + waterWidth * i / 52;
-    const pooled = .78 + .5 * Math.exp(-(((x - width * .42) / 175) ** 2));
-    const noise = (random(i * 7 + 323) - .5) * 4;
-    crest.push([x, floorAt(x) - (30 * pooled + noise) * reading.retained]);
+    crest.push([x, sludgeTop(x, reading.retained)]);
   }
   ctx.save();
   polygon(ctx, [...crest, ...reversedFloor]);
@@ -156,10 +190,14 @@ function drawTankParticles(ctx, reading, time, sprites, mixing, settling) {
     const fine = group === 3;
     const show = clamp(mass * (fine ? 1.12 : 2.25));
     for (const dot of particleSets[group]) {
-      if (dot.rank > show || dot.y + drop >= 1) continue;
-      const x = waterLeft + 6 + (waterWidth - 12) * clamp(dot.x + Math.sin(time * .9 + dot.phase) * drift);
-      const depth = clamp(dot.y + drop + Math.cos(time * .72 + dot.phase) * drift * .42);
+      if (dot.rank > show) continue;
+      const column = clamp(dot.x + Math.sin(time * .9 + dot.phase) * drift);
+      const front = columnDrop(drop, column);
+      const x = waterLeft + waterWidth * column;
+      const depth = Math.max(front, dot.y + front + Math.cos(time * .72 + dot.phase) * drift * .42);
+      if (depth >= 1) continue;
       const y = waterline + (floorAt(x) - waterline) * depth;
+      if (settling && reading.retained >= .007 && y >= sludgeTop(x, reading.retained)) continue;
       if (fine) {
         ctx.fillStyle = dot.size > .66 ? "#d4b88e81" : "#624e3890";
         ctx.fillRect(x, y, .5 + dot.size * 1.9, .5 + dot.size * 1.16);
@@ -186,7 +224,34 @@ function drawPaddles(ctx, axes, time, spinning, rapid) {
   }
 }
 
-function drawLiquid(ctx, plant, reading, time, sprites, dirt) {
+function drawWaterHaze(ctx, reading, haze) {
+  if (haze.retained !== reading.retained) {
+    const { image, context } = haze;
+    const { data, width: columns, height: rows } = image;
+    for (let col = 0; col < columns; col++) {
+      const x = col / (columns - 1);
+      const depthScale = wetHeight / (floorAt(waterLeft + waterWidth * x) - waterline);
+      const fronts = reading.suspension.map(({ drop }) => columnDrop(drop, x));
+      for (let row = 0; row < rows; row++) {
+        const depth = row / (rows - 1) * depthScale;
+        let murk = 0;
+        for (let group = 0; group < fronts.length; group++) {
+          murk += reading.suspension[group].mass * suspendedFraction(fronts[group], depth);
+        }
+        const pixelIndex = (row * columns + col) * 4;
+        data[pixelIndex] = 157;
+        data[pixelIndex + 1] = 123;
+        data[pixelIndex + 2] = 76;
+        data[pixelIndex + 3] = 150 * murk;
+      }
+    }
+    context.putImageData(image, 0, 0);
+    haze.retained = reading.retained;
+  }
+  ctx.drawImage(haze.canvas, waterLeft, waterline, waterWidth, wetHeight);
+}
+
+function drawLiquid(ctx, plant, reading, time, sprites, dirt, haze) {
   const mixing = plant.active && (plant.inMixingChamber || plant.phase === "flocculation");
   const settling = plant.phase === "settling" || plant.phase === "result";
   drawSurface(ctx, reading, time, mixing);
@@ -197,14 +262,7 @@ function drawLiquid(ctx, plant, reading, time, sprites, dirt) {
     [0,"#89b5ad62"], [.18,"#709c9855"], [.66,"#3669666b"], [1,"#203e3d8d"],
   ]);
   ctx.fillRect(waterLeft,waterline,waterWidth,wetHeight);
-  const haze = ctx.createLinearGradient(0,waterline,0,bottom);
-  for (let i = 0; i <= 18; i++) {
-    const at = i / 18;
-    const murk = concentration(reading, at);
-    haze.addColorStop(at, "rgba(157,123,76," + (.59 * murk) + ")");
-  }
-  ctx.fillStyle = haze;
-  ctx.fillRect(waterLeft,waterline,waterWidth,wetHeight);
+  drawWaterHaze(ctx, reading, haze);
   if (plant.inMixingChamber) drawPaddles(ctx, [rapidAxis], time, mixing, true);
   if (plant.phase === "flocculation") drawPaddles(ctx, slowAxes, time, mixing, false);
   if (settling) drawSludge(ctx, reading, dirt);
@@ -280,7 +338,31 @@ function drawOutlet(ctx, reading, time) {
   }
 }
 
-function drawMicroscope(ctx, frame, reading, layer, time, sprites) {
+function drawSamplingPoint(ctx, point, scale) {
+  const x = waterLeft + waterWidth * point.x;
+  const y = point.surfaceY ?? waterline + (floorAt(x) - waterline) * point.depth;
+  const radius = 13 / scale;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.fillStyle = "#064b373c";
+  ctx.fill();
+  ctx.lineWidth = 4 / scale;
+  ctx.strokeStyle = "#173b36";
+  ctx.stroke();
+  ctx.lineWidth = 2 / scale;
+  ctx.strokeStyle = "#baffd4";
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x - radius * .46, y);
+  ctx.lineTo(x + radius * .46, y);
+  ctx.moveTo(x, y - radius * .46);
+  ctx.lineTo(x, y + radius * .46);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawMicroscope(ctx, frame, reading, sample, time, sprites, dirt) {
   const { w, h, dpr } = frame;
   ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.fillStyle = linear(ctx,0,0,w,h,[[0,"#24342e"],[1,"#121f1e"]]);
@@ -288,11 +370,11 @@ function drawMicroscope(ctx, frame, reading, layer, time, sprites) {
   const x = w / 2;
   const y = h / 2 + 2;
   const radius = Math.min(w*.40,h*.453);
-  const murk = concentration(reading, layer.depth);
+  const murk = sample.concentration;
   const lamp = ctx.createRadialGradient(x-radius*.23,y-radius*.24,0,x,y,radius);
-  lamp.addColorStop(0, murk > .43 ? "#ddd1ae" : "#e8e3c9");
-  lamp.addColorStop(.77, murk > .43 ? "#bdb18c" : "#d7d0b0");
-  lamp.addColorStop(1,"#928867");
+  lamp.addColorStop(0, "rgb(" + (241 - 29 * murk) + "," + (237 - 41 * murk) + "," + (214 - 67 * murk) + ")");
+  lamp.addColorStop(.77, "rgb(" + (226 - 37 * murk) + "," + (220 - 49 * murk) + "," + (191 - 62 * murk) + ")");
+  lamp.addColorStop(1, "#928867");
   ctx.save();
   ctx.beginPath();
   ctx.arc(x,y,radius,0,Math.PI*2);
@@ -301,20 +383,24 @@ function drawMicroscope(ctx, frame, reading, layer, time, sprites) {
   ctx.clip();
 
   for (let i = 0; i < 260; i++) {
-    const dx = (random(i * 11 + 91) - .5) * 2 * radius;
-    const dy = (random(i * 11 + 94) - .5) * 2 * radius;
+    const seed = sample.seed + i * 11;
+    const dx = (random(seed + 91) - .5) * 2 * radius;
+    const dy = (random(seed + 94) - .5) * 2 * radius;
     ctx.fillStyle = i % 3 ? "#4037220b" : "#fff9da37";
     ctx.fillRect(x + dx, y + dy, i % 11 ? .72 : 1.65, .85);
   }
   for (let group = 0; group < 4; group++) {
-    const presence = sampleConcentration(reading.suspension[group], layer.depth);
+    const { mass, front } = sample.groups[group];
     const fine = group === 3;
-    const count = Math.round(presence * (fine ? 100 : 95));
+    const count = Math.round(mass * (fine ? 118 : 105));
+    const descent = time ? front * (fine ? 1.15 : 2.25) : 0;
     for (let i = 0; i < count; i++) {
       const dot = particleSets[group][i];
       if (!dot) break;
-      const dx = 2 * radius * (dot.x - .5) + Math.cos(time * .36 + dot.phase) * 2;
-      const dy = 2 * radius * (dot.y - .5) + Math.sin(time * .39 + dot.phase) * 2;
+      const seed = sample.seed + 1301 * group + 19 * i;
+      const dx = 2 * radius * (random(seed) - .5) + Math.cos(time * .36 + dot.phase) * 2;
+      const dy = 2 * radius * ((random(seed + 1) + descent) % 1 - .5)
+        + Math.sin(time * .39 + dot.phase) * 2;
       if (fine) {
         ctx.beginPath();
         ctx.ellipse(x+dx,y+dy,.65+2.2*dot.size,.5+1.1*dot.size,dot.phase,0,Math.PI*2);
@@ -327,13 +413,26 @@ function drawMicroscope(ctx, frame, reading, layer, time, sprites) {
       }
     }
   }
-  if (layer === sampleLayers.bottom && reading.retained > .035) {
-    for (let i = 0; i < 20; i++) {
-      const size = radius * (.40 + .28 * random(i + 56));
-      const dx = radius * (2.14 * random(i * 7 + 12) - 1.07);
-      const dy = radius * (.72 - .25 * reading.retained + .26 * random(i + 83));
-      ctx.drawImage(sprites[i % sprites.length],x+dx-size/2,y+dy-size/2,size,size);
+  if (sample.deposit > 0) {
+    const crest = y + radius * (1.16 - 2.32 * sample.deposit);
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(x - radius, crest);
+    for (let i = 1; i <= 38; i++) {
+      const bump = (random(sample.seed + i * 43) - .5) * radius * .14;
+      ctx.lineTo(x - radius + 2 * radius * i / 38, crest + bump);
     }
+    ctx.lineTo(x + radius, y + radius);
+    ctx.lineTo(x - radius, y + radius);
+    ctx.closePath();
+    ctx.fillStyle = "#725b40";
+    ctx.fill();
+    ctx.clip();
+    if (dirt.naturalWidth) {
+      ctx.globalAlpha = .68;
+      ctx.drawImage(dirt, x - radius, y - radius, radius * 2, radius * 2);
+    }
+    ctx.restore();
   }
   ctx.restore();
   ctx.beginPath();
@@ -345,7 +444,7 @@ function drawMicroscope(ctx, frame, reading, layer, time, sprites) {
   const left = x - radius * .51;
   const bar = radius * 2 * 100 / 660;
   const baseline = y + radius * .65;
-  ctx.fillStyle = "#453c2d";
+  ctx.fillStyle = sample.deposit > .28 ? "#fff3da" : "#453c2d";
   ctx.fillRect(left, baseline, bar, 1.5);
   ctx.font = "600 10px Arial, sans-serif";
   ctx.fillText("100 µm", left, baseline - 4);
@@ -359,11 +458,19 @@ function loadAsset(path, onload) {
 }
 
 export class StationView {
-  constructor(canvas, onload) {
+  constructor(canvas, microscope, onload) {
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
     this.frame = null;
+    this.microscope = microscope;
+    this.lens = microscope.getContext("2d");
+    this.lensFrame = null;
     this.sprites = this.ctx ? Array.from({length:5}, (_, index) => createFloc(index)) : [];
+    const haze = document.createElement("canvas");
+    haze.width = 64;
+    haze.height = 48;
+    const context = haze.getContext("2d");
+    this.haze = { canvas: haze, context, image: context.createImageData(haze.width, haze.height) };
     this.scenes = {
       coagulation: loadAsset("coagulacao.webp", onload),
       flocculation: loadAsset("floculacao.webp", onload),
@@ -385,13 +492,32 @@ export class StationView {
       sx: (w - width * scale) / 2, sy: (h - height * scale) * .53 };
   }
 
-  draw(plant, reading, mode, depth, time) {
+  resizeMicroscope() {
+    const w = this.microscope.clientWidth;
+    const h = this.microscope.clientHeight;
+    if (!this.lens || !w || !h) return;
+    const dpr = Math.min(devicePixelRatio || 1, 1.8);
+    this.microscope.width = Math.round(w * dpr);
+    this.microscope.height = Math.round(h * dpr);
+    this.lensFrame = { w, h, dpr };
+  }
+
+  pointAt(clientX, clientY) {
+    if (!this.frame) return null;
+    const rect = this.canvas.getBoundingClientRect();
+    const { w, h, scale, sx, sy } = this.frame;
+    const worldX = ((clientX - rect.left) * w / rect.width - sx) / scale;
+    const worldY = ((clientY - rect.top) * h / rect.height - sy) / scale;
+    const localFloor = floorAt(worldX);
+    if (worldX < waterLeft || worldX > waterRight || worldY < topBack[0][1] || worldY > localFloor) return null;
+    const x = (worldX - waterLeft) / waterWidth;
+    const depth = clamp((worldY - waterline) / (localFloor - waterline));
+    return { x, depth, surfaceY: worldY < waterline ? worldY : undefined };
+  }
+
+  draw(plant, reading, point, time) {
     if (!this.frame) return;
-    const { ctx, frame, sprites, dirt } = this;
-    if (mode === "micro") {
-      drawMicroscope(ctx, frame, reading, sampleLayers[depth], time, sprites);
-      return;
-    }
+    const { ctx, frame, sprites, dirt, haze } = this;
     const { dpr, scale, sx, sy } = frame;
     ctx.setTransform(1,0,0,1,0,0);
     ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
@@ -400,9 +526,14 @@ export class StationView {
     if (!image.naturalWidth) return;
     ctx.setTransform(dpr*scale,0,0,dpr*scale,sx*dpr,sy*dpr);
     ctx.drawImage(image,0,0,width,height);
-    drawLiquid(ctx,plant,reading,time,sprites,dirt);
+    drawLiquid(ctx,plant,reading,time,sprites,dirt,haze);
     drawReagent(ctx,plant,time);
     drawProbe(ctx,plant);
     if (plant.phase === "settling" || plant.phase === "result") drawOutlet(ctx,reading,time);
+    if (point) drawSamplingPoint(ctx, point, scale);
+  }
+
+  drawSample(reading, sample, time) {
+    if (this.lensFrame) drawMicroscope(this.lens, this.lensFrame, reading, sample, time, this.sprites, this.dirt);
   }
 }

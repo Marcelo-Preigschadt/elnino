@@ -8,8 +8,8 @@
   <title>Estação de Tratamento de Água | ETA Virtual</title>
   <link rel="icon" href="./assets/favicon.png" type="image/png">
   <link rel="preload" href="./assets/eta/coagulacao.webp" as="image" type="image/webp">
-  <link rel="stylesheet" href="./styles.css?v=4">
-  <script type="module" src="./app.js?v=4"></script>
+  <link rel="stylesheet" href="./styles.css?v=5">
+  <script type="module" src="./app.js?v=5"></script>
 </head>
 <body>
   <a class="skip-link" href="#estacao">Ir para a estação</a>
@@ -44,22 +44,14 @@
           <h2 id="basin-title">Câmara de mistura rápida</h2>
           <span class="cutaway-label">Vista em corte</span>
         </header>
-        <div class="observation-tools" id="observation-tools" hidden>
-          <div class="view-selector" role="group" aria-label="Vista do decantador">
-            <button type="button" id="view-tank" aria-pressed="true">Tanque</button>
-            <button type="button" id="view-micro" aria-pressed="false">Microscópio</button>
-          </div>
-          <label class="sample-depth" id="depth-control" hidden>
-            <span>Camada</span>
-            <select id="sample-depth">
-              <option value="surface">Superfície</option>
-              <option value="middle">Meio</option>
-              <option value="bottom">Fundo</option>
-            </select>
-          </label>
+        <div class="sampling-guide">
+          <i class="lens-icon" aria-hidden="true"></i>
+          <p id="sample-instruction"><strong>Microscópio</strong> <span>Toque em um ponto da água para ampliar.</span></p>
+          <span class="sr-only" id="sample-keys">Use as setas para mover o ponto dentro da água. Pressione Enter ou Espaço para abrir o microscópio.</span>
         </div>
         <div class="scene" id="scene">
-          <canvas id="treatment-scene" role="img" aria-label="Câmara de mistura rápida com água bruta e tubulação de dosagem de policloreto de alumínio."></canvas>
+          <canvas id="treatment-scene" role="button" tabindex="0" aria-haspopup="dialog" aria-controls="microscope" aria-describedby="sample-instruction sample-keys"
+            aria-label="Selecionar ponto no tanque para o microscópio"></canvas>
           <div class="scene-status"><i aria-hidden="true"></i><span id="scene-status">Água bruta na câmara</span></div>
           <span class="scene-caption" id="scene-caption">Entrada de água bruta</span>
         </div>
@@ -141,7 +133,8 @@
 
           <section id="panel-settling" hidden>
             <h3 id="heading-settling" tabindex="-1">Acompanhe a decantação</h3>
-            <p id="settling-help">Observe os flocos descendo e a camada superior clareando. Use o microscópio para comparar as camadas.</p>
+            <p>Toque em pontos diferentes da água para ampliar os flocos enquanto eles descem.</p>
+            <button type="button" class="button button-secondary" id="locate-microscope">Escolher ponto no tanque</button>
             <div class="phase-progress">
               <label for="settling-progress">Tempo no decantador</label><span id="settling-percent">0%</span>
               <progress id="settling-progress" max="100" value="0"></progress>
@@ -203,7 +196,8 @@
     <footer class="lab-footer">
       <details>
         <summary>Parâmetros e fontes do modelo</summary>
-        <p>A amostra virtual tem turbidez inicial de 120 uT e alcalinidade de 22 mg/L como CaCO₃. O pH é estimado pelo equilíbrio carbonático a 25 °C, pelo corretor aplicado e pela acidez liberada na hidrólise do PAC. As doses e o campo microscópico pertencem a este modelo didático.</p>
+        <p>A amostra virtual tem turbidez inicial de 120 uT e alcalinidade de 22 mg/L como CaCO₃. O pH é estimado pelo equilíbrio carbonático a 25 °C, pelo corretor aplicado e pela acidez liberada na hidrólise do PAC.</p>
+        <p>O campo microscópico é ilustrativo. A concentração de partículas varia com o tempo, a profundidade e a posição escolhida entre a entrada e a saída do decantador.</p>
         <p>O ensaio de jarros permite avaliar, entre outros parâmetros, o pH e a turbidez residual da água captada.</p>
         <p>O cenário tem 45 segundos de mistura rápida, até 25 minutos de floculação e até duas horas de permanência no decantador. A imagem mostra o movimento de uma parcela representativa da água na unidade.</p>
         <ul>
@@ -216,6 +210,24 @@
       </details>
     </footer>
   </main>
+  <dialog class="microscope" id="microscope" aria-labelledby="microscope-title" aria-describedby="micro-location">
+    <header class="microscope-header">
+      <div>
+        <h2 id="microscope-title">Microscópio</h2>
+        <p id="micro-location"></p>
+      </div>
+      <form method="dialog"><button class="button button-secondary" id="close-microscope" autofocus>Voltar ao tanque</button></form>
+    </header>
+    <div class="microscope-field">
+      <canvas id="microscope-scene" role="img" aria-label="Campo microscópico da amostra."></canvas>
+      <span id="micro-status"></span>
+    </div>
+    <dl class="micro-readings">
+      <div><dt>Profundidade relativa</dt><dd id="micro-depth"></dd></div>
+      <div><dt>Partículas em suspensão</dt><dd id="micro-concentration"></dd></div>
+    </dl>
+    <p class="micro-note">Campo ilustrativo do ponto selecionado. Volte ao tanque e toque em outro ponto para comparar.</p>
+  </dialog>
   <div class="sr-only" id="announcement" role="status" aria-live="polite"></div>
   <noscript><p class="no-script">Ative o JavaScript no navegador para operar a estação.</p></noscript>
 </body>
