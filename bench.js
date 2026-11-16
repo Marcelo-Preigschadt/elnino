@@ -3,7 +3,9 @@ import { clamp, liquidLevel, projection, rotatePoint, smoothstep, spanAt, vessel
 
 const lip = { x: 88, y: -162 };
 const radians = Math.PI / 180;
-const spacing = 143;
+const defaultSpacing = 143;
+const framingHeight = 425;
+const edgeClearance = 9;
 const initialOutline = projection(0);
 
 const glass = new Path2D();
@@ -348,7 +350,7 @@ function drawPreparation(ctx, position, model, time) {
   ctx.restore();
 }
 
-function beakerPositions(benchY, angle) {
+function beakerPositions({ benchY, spacing }, angle) {
   const receiver = { x: spacing, y: benchY, angle: 0 };
   const fraction = smoothstep(0, 47, angle);
   const rotated = rotatePoint(lip.x, lip.y, angle);
@@ -370,24 +372,27 @@ export class Bench {
     const width = this.canvas.clientWidth;
     const height = this.canvas.clientHeight;
     if (width === 0 || height === 0 || !this.ctx) return;
+    const scene = this.canvas.parentElement;
+    const spacing = Number.parseFloat(getComputedStyle(scene).getPropertyValue("--beaker-spacing")) || defaultSpacing;
+    const framingWidth = 2 * (spacing + lip.x + edgeClearance);
+    const scale = Math.min(width / framingWidth, height / framingHeight);
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     this.canvas.width = Math.round(width * dpr);
     this.canvas.height = Math.round(height * dpr);
-    const scale = Math.min(width / 480, height / 425);
-    this.layout = { width, scale, dpr, benchY: height * .84 / scale };
-    this.canvas.parentElement.style.setProperty("--label-width", 4 * spacing * scale + "px");
+    this.layout = { width, scale, dpr, spacing, benchY: height * .84 / scale };
+    scene.style.setProperty("--label-width", 4 * spacing * scale + "px");
   }
 
   draw(model, time) {
     if (!this.layout) return;
     const { ctx, layout } = this;
-    const { width, scale, dpr, benchY } = layout;
+    const { width, scale, dpr, spacing, benchY } = layout;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     ctx.setTransform(scale * dpr, 0, 0, scale * dpr, width * dpr / 2, 0);
     ctx.lineCap = "round";
 
-    const { source, receiver, spout } = beakerPositions(benchY, model.angle);
+    const { source, receiver, spout } = beakerPositions(layout, model.angle);
     drawShadow(ctx, -spacing, benchY, smoothstep(0, 48, model.angle));
     drawShadow(ctx, receiver.x, benchY, 0);
     drawBeaker(ctx, receiver, model.receiver, "B", time);
@@ -402,9 +407,9 @@ export class Bench {
 
   touchesSource(pointer, model) {
     if (!this.layout) return false;
-    const { width, scale, benchY } = this.layout;
+    const { width, scale } = this.layout;
     const box = this.canvas.getBoundingClientRect();
-    const { source } = beakerPositions(benchY, model.angle);
+    const { source } = beakerPositions(this.layout, model.angle);
     const x = (pointer.clientX - box.left - width / 2) / scale - source.x;
     const y = (pointer.clientY - box.top) / scale - source.y;
     const local = rotatePoint(x, y, -source.angle);

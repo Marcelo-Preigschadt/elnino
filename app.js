@@ -1,4 +1,4 @@
-import { Bench } from "./bench.js";
+import { Bench } from "./bench.js?v=2";
 import { Decantation, maxAngle, suspendedSand, totalSand } from "./model.js";
 
 const byId = (id) => document.getElementById(id);
@@ -86,7 +86,7 @@ function describeScene() {
   if (totalSand(model.receiver) >= .10) return ["Areia no béquer de coleta", true];
   if (model.canFinish) return ["Béquer A na vertical", false];
   if (model.receiver.water >= 1) return ["Fluxo interrompido", false];
-  return ["Ajuste a inclinação do béquer A", false];
+  return ["Incline o béquer A para a direita", false];
 }
 
 function paintPhase(moveFocus) {
