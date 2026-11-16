@@ -1,5 +1,5 @@
 import { Treatment, alkalinity, clamp, correctors, initialIncrement, maxDose, maximumCorrection, process, rawTurbidity } from "./treatment.js?v=4";
-import { StationView, inspectPoint } from "./station-view.js?v=5";
+import { StationView, inspectPoint } from "./station-view.js?v=6";
 
 const byId = (id) => document.getElementById(id);
 const canvas = byId("treatment-scene");
@@ -30,10 +30,11 @@ const titles = {
   result: "Decantador",
 };
 
-let plant = new Treatment();
+const useDecanterExample = new URLSearchParams(location.search).get("exemplo") === "decantador";
+let plant = useDecanterExample ? startDecanterExample() : new Treatment();
 let currentPanel = null;
 let lastReadCount = -1;
-let paused = false;
+let paused = useDecanterExample;
 let selectedPoint = null;
 let frameId = 0;
 let previousFrame = 0;
@@ -43,6 +44,21 @@ let visualTime = 0;
 let dirty = true;
 let lastStatus = "";
 const view = new StationView(canvas, lens, queue);
+
+function startDecanterExample() {
+  const example = new Treatment();
+  example.measure();
+  example.stepMeter(3);
+  example.addDose(28);
+  example.step(process.coagulation.duration);
+  example.measure();
+  example.stepMeter(3);
+  example.advance();
+  example.step(18 * 60);
+  example.advance();
+  example.step(20 * 60);
+  return example;
+}
 
 function setText(element, value) {
   if (element.textContent !== value) element.textContent = value;
@@ -213,7 +229,7 @@ function updateInterface(reading) {
 }
 
 function pointLabel({ x, depth }) {
-  const layer = depth < .28 ? "Superfície" : depth > .72 ? "Fundo" : "Meia profundidade";
+  const layer = depth < .24 ? "Superfície" : depth > .82 ? "Fundo" : "Meia profundidade";
   const side = x < .30 ? "junto à entrada" : x > .70 ? "junto à saída" : "no centro";
   return layer + " · " + side;
 }
@@ -221,11 +237,12 @@ function pointLabel({ x, depth }) {
 function renderMicroscope(sample) {
   const location = pointLabel(selectedPoint);
   const settling = plant.phase === "settling" || plant.phase === "result";
-  const flocs = sample.groups.slice(0, 3).some(({ mass }) => mass >= .025);
+  const flocs = sample.flocs >= .046;
   const status = sample.inSludge ? "Lodo depositado"
+    : sample.deposit >= .14 ? "Transição para o lodo"
     : settling && flocs ? "Flocos em suspensão"
-    : settling && sample.concentration < .02 ? "Água clarificada"
-    : flocs ? "Flocos em formação" : "Partículas finas";
+    : settling && sample.concentration < .19 ? "Água com poucos sólidos"
+    : flocs ? "Flocos em formação" : "Partículas finas dispersas";
   const concentration = Math.round(100 * sample.concentration) + "% da água bruta";
   put("micro-location", location);
   put("micro-status", status);

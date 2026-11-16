@@ -4,6 +4,8 @@ Simulação de uma estação convencional de tratamento de água, da leitura ini
 
 [Estação publicada](https://marcelo-preigschadt.github.io/elnino/)
 
+[Exemplo no decantador](https://marcelo-preigschadt.github.io/elnino/?exemplo=decantador) abre uma amostra pausada aos 20 minutos de sedimentação para comparar os pontos. O botão **Retomar** continua a decantação.
+
 ## Executar localmente
 
 Sirva a raiz por HTTP com o comando abaixo e abra http://localhost:8080/.

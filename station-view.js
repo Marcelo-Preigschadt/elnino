@@ -54,16 +54,21 @@ function columnDrop(drop, x) {
   return mean + gradient * (2 * x - 1);
 }
 
-function suspendedFraction(front, depth) {
+function suspensionProfile(front, depth) {
   if (front === 0) return 1;
   if (front === 1) return 0;
-  const spread = Math.min(.035, front, 1 - front);
-  return clamp((depth - front + spread) / (2 * spread));
+  const remaining = 1 - front;
+  const spread = Math.min(.085, front, remaining);
+  const presence = clamp((depth - front + spread) / (2 * spread));
+  // Enrich the deeper water around the mean depth of the surviving suspension.
+  // The adjustment integrates to zero over the column.
+  const meanDepth = (1 + front) / 2 - spread ** 2 / (6 * remaining);
+  return presence * (1 + 1.4 * Math.sqrt(front) * (depth - meanDepth));
 }
 
 function concentration(reading, x, depth) {
   return reading.suspension.reduce((sum, { mass, drop }) => (
-    sum + mass * suspendedFraction(columnDrop(drop, x), depth)
+    sum + mass * suspensionProfile(columnDrop(drop, x), depth)
   ), 0);
 }
 
@@ -74,47 +79,54 @@ function floorAt(x) {
   return y0 + (y1 - y0) * clamp((x - x0) / (x1 - x0));
 }
 
-function sludgeTop(x, retained) {
+function sludgeTop(x, retained, localFloor = floorAt(x)) {
   const pooled = .78 + .5 * Math.exp(-(((x - width * .42) / 175) ** 2));
-  return floorAt(x) - 30 * pooled * retained;
+  return localFloor - 49 * pooled * retained;
 }
 
 export function inspectPoint(reading, point) {
   const { x, depth } = point;
   const worldX = waterLeft + waterWidth * x;
-  const worldY = waterline + (floorAt(worldX) - waterline) * depth;
-  const crest = sludgeTop(worldX, reading.retained);
+  const localFloor = floorAt(worldX);
+  const columnHeight = localFloor - waterline;
+  const worldY = waterline + columnHeight * depth;
+  const crest = sludgeTop(worldX, reading.retained, localFloor);
   const inSludge = reading.retained >= .007 && worldY >= crest;
-  const deposit = reading.retained < .007 ? 0 : clamp((worldY - crest + 6) / 12);
+  const fieldHeight = .11 * columnHeight;
+  const bedThickness = localFloor - crest;
+  const deposit = reading.retained < .007 ? 0
+    : clamp(.55 + (worldY - crest) / fieldHeight) * clamp(bedThickness / 6);
   const groups = reading.suspension.map(({ mass, drop }) => {
     const front = columnDrop(drop, x);
-    return { front, mass: mass * suspendedFraction(front, Math.max(.018, depth)) * (1 - deposit) };
+    return { front, mass: mass * suspensionProfile(front, Math.max(.018, depth)) * (1 - deposit) };
   });
 
+  const fines = groups.at(-1).mass;
+  const flocs = groups.slice(0, -1).reduce((sum, { mass }) => sum + mass, 0);
   return {
-    groups,
-    inSludge,
-    deposit,
-    concentration: groups.reduce((sum, { mass }) => sum + mass, 0),
+    groups, inSludge, deposit, fines, flocs,
+    concentration: flocs + fines,
     seed: Math.round(x * 1000) * 1009 + Math.round(depth * 1000),
   };
 }
 
-function createFloc(index) {
+function createFloc(index, magnified = false) {
   const picture = document.createElement("canvas");
   picture.width = picture.height = 82;
   const ctx = picture.getContext("2d");
   const center = 41;
+  const branches = magnified ? 5 + index % 3 : 6;
 
-  for (let i = 0; i < 93; i++) {
+  for (let i = 0; i < (magnified ? 195 : 93); i++) {
     const seed = 28 * i + 379 * index;
-    const branch = i % 6;
-    const angle = branch * Math.PI / 3 + (random(seed + 1) - .5) * 1.55;
-    const spread = 35 * random(seed + 2) ** 1.22;
+    const branch = i % branches;
+    const angle = branch * (Math.PI * 2 / branches) + (random(seed + 1) - .5) * 1.55;
+    const spread = 35 * random(seed + 2) ** (magnified ? .88 : 1.22);
+    const stretch = magnified ? .67 + .27 * random(seed + 6 + index * 2) : .94;
     const x = center + Math.cos(angle) * spread * (.8 + random(seed + 3) * .2);
-    const y = center + Math.sin(angle) * spread * .94;
+    const y = center + Math.sin(angle) * spread * stretch;
     const r = 1.1 + random(seed + 4) * (4.65 - .032 * spread);
-    const alpha = (.16 + .27 * random(seed + 5)) * (1 - spread / 54);
+    const alpha = (.16 + .27 * random(seed + 5)) * (1 - spread / 54) * (magnified ? 1.72 : 1);
     const veil = ctx.createRadialGradient(x,y,0,x,y,r);
     veil.addColorStop(0, "rgba(84,60,39," + alpha + ")");
     veil.addColorStop(.6, "rgba(116,90,58," + .85 * alpha + ")");
@@ -236,7 +248,7 @@ function drawWaterHaze(ctx, reading, haze) {
         const depth = row / (rows - 1) * depthScale;
         let murk = 0;
         for (let group = 0; group < fronts.length; group++) {
-          murk += reading.suspension[group].mass * suspendedFraction(fronts[group], depth);
+          murk += reading.suspension[group].mass * suspensionProfile(fronts[group], Math.min(1, depth));
         }
         const pixelIndex = (row * columns + col) * 4;
         data[pixelIndex] = 157;
@@ -362,7 +374,63 @@ function drawSamplingPoint(ctx, point, scale) {
   ctx.restore();
 }
 
-function drawMicroscope(ctx, frame, reading, sample, time, sprites, dirt) {
+function createMicroscopeSediment(sprites) {
+  const texture = document.createElement("canvas");
+  const size = texture.width = texture.height = 384;
+  const ctx = texture.getContext("2d");
+  const grains = ["#19120d", "#302219", "#7e593d", "#ad8258", "#ccb190"];
+  for (let i = 0; i < 1850; i++) {
+    const seed = 16 * i + 47;
+    const x = size * random(seed);
+    const y = size * random(seed + 1);
+    const radius = .65 + 8 * random(seed + 2) ** 3.2;
+    const hue = grains[Math.floor(random(seed + 5) * grains.length)];
+    const haze = ctx.createRadialGradient(x - radius * .18, y - radius * .25, 0, x, y, radius);
+    haze.addColorStop(0, hue + "dc");
+    haze.addColorStop(.54, hue + "b0");
+    haze.addColorStop(1, hue + "12");
+    ctx.beginPath();
+    ctx.ellipse(x, y, radius, radius * (.38 + .58 * random(seed + 3)), random(seed + 4) * Math.PI, 0, Math.PI * 2);
+    ctx.fillStyle = haze;
+    ctx.fill();
+    if (i % 13 === 0) {
+      const diameter = 15 + 22 * random(seed + 6);
+      ctx.drawImage(sprites[i % sprites.length], x - diameter / 2, y - diameter / 2, diameter, diameter);
+    }
+  }
+  return texture;
+}
+
+function drawMicroscopeSediment(ctx, x, y, radius, sample, texture) {
+  const crest = y + radius * (1.06 - 2.24 * sample.deposit);
+  const phase = sample.seed * .027;
+  ctx.save();
+  ctx.beginPath();
+  for (let i = 0; i <= 48; i++) {
+    const at = i / 48;
+    const edge = crest + radius * (.037 * Math.sin(10 * at + phase) + .017 * Math.sin(37 * at + phase));
+    if (i === 0) ctx.moveTo(x - radius, edge);
+    else ctx.lineTo(x - radius + 2 * radius * at, edge);
+  }
+  ctx.lineTo(x + radius, y + radius);
+  ctx.lineTo(x - radius, y + radius);
+  ctx.closePath();
+  ctx.clip();
+  ctx.fillStyle = linear(ctx, 0, crest, 0, y + radius, [[0, "#846043"], [.32, "#5c402e"], [1, "#36271f"]]);
+  ctx.fillRect(x - radius, y - radius, 2 * radius, 2 * radius);
+  const crop = texture.width * .68;
+  const xOffset = (texture.width - crop) * random(sample.seed + 1);
+  const yOffset = (texture.height - crop) * random(sample.seed + 2);
+  ctx.drawImage(texture, xOffset, yOffset, crop, crop, x - radius, y - radius, 2 * radius, 2 * radius);
+  ctx.restore();
+}
+
+function opticalColor(light, dark, opacity) {
+  const channels = light.map((value, i) => Math.round(value + (dark[i] - value) * opacity));
+  return "rgb(" + channels.join(",") + ")";
+}
+
+function drawMicroscope(ctx, frame, reading, sample, time, sprites, sediment) {
   const { w, h, dpr } = frame;
   ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.fillStyle = linear(ctx,0,0,w,h,[[0,"#24342e"],[1,"#121f1e"]]);
@@ -370,11 +438,11 @@ function drawMicroscope(ctx, frame, reading, sample, time, sprites, dirt) {
   const x = w / 2;
   const y = h / 2 + 2;
   const radius = Math.min(w*.40,h*.453);
-  const murk = sample.concentration;
+  const opacity = clamp(.80 * sample.fines + 1.08 * sample.flocs);
   const lamp = ctx.createRadialGradient(x-radius*.23,y-radius*.24,0,x,y,radius);
-  lamp.addColorStop(0, "rgb(" + (241 - 29 * murk) + "," + (237 - 41 * murk) + "," + (214 - 67 * murk) + ")");
-  lamp.addColorStop(.77, "rgb(" + (226 - 37 * murk) + "," + (220 - 49 * murk) + "," + (191 - 62 * murk) + ")");
-  lamp.addColorStop(1, "#928867");
+  lamp.addColorStop(0, opticalColor([251, 252, 240], [215, 179, 123], opacity));
+  lamp.addColorStop(.83, opticalColor([235, 239, 222], [177, 140, 90], opacity));
+  lamp.addColorStop(1, opticalColor([162, 174, 157], [116, 88, 57], opacity));
   ctx.save();
   ctx.beginPath();
   ctx.arc(x,y,radius,0,Math.PI*2);
@@ -382,58 +450,33 @@ function drawMicroscope(ctx, frame, reading, sample, time, sprites, dirt) {
   ctx.fill();
   ctx.clip();
 
-  for (let i = 0; i < 260; i++) {
-    const seed = sample.seed + i * 11;
-    const dx = (random(seed + 91) - .5) * 2 * radius;
-    const dy = (random(seed + 94) - .5) * 2 * radius;
-    ctx.fillStyle = i % 3 ? "#4037220b" : "#fff9da37";
-    ctx.fillRect(x + dx, y + dy, i % 11 ? .72 : 1.65, .85);
-  }
-  for (let group = 0; group < 4; group++) {
+  const diameterMicrons = [180, 117, 74];
+  const micronsPerPixel = 660 / (2 * radius);
+  for (let group = sample.groups.length - 1; group >= 0; group--) {
     const { mass, front } = sample.groups[group];
     const fine = group === 3;
-    const count = Math.round(mass * (fine ? 118 : 105));
+    const dots = particleSets[group];
+    const count = Math.min(dots.length, Math.round(mass * (fine ? 117 : 73)));
     const descent = time ? front * (fine ? 1.15 : 2.25) : 0;
     for (let i = 0; i < count; i++) {
-      const dot = particleSets[group][i];
-      if (!dot) break;
+      const dot = dots[i];
       const seed = sample.seed + 1301 * group + 19 * i;
       const dx = 2 * radius * (random(seed) - .5) + Math.cos(time * .36 + dot.phase) * 2;
       const dy = 2 * radius * ((random(seed + 1) + descent) % 1 - .5)
         + Math.sin(time * .39 + dot.phase) * 2;
       if (fine) {
+        const grain = .60 + 1.90 * dot.size ** 1.45;
         ctx.beginPath();
-        ctx.ellipse(x+dx,y+dy,.65+2.2*dot.size,.5+1.1*dot.size,dot.phase,0,Math.PI*2);
-        ctx.fillStyle = dot.size > .58 ? "#7963407e" : "#9b8a615e";
+        ctx.ellipse(x + dx, y + dy, grain, grain * (.55 + .31 * dot.rank), dot.phase, 0, Math.PI * 2);
+        ctx.fillStyle = dot.size > .61 ? "#614832bc" : "#8d775b89";
         ctx.fill();
       } else {
-        const scale = 2 * radius / 660;
-        const size = (135-group*27) * scale * (.54 + .77 * dot.size) * (.6 + .4 * reading.maturity);
-        ctx.drawImage(sprites[dot.shape],x+dx-size/2,y+dy-size/2,size,size);
+        const size = (diameterMicrons[group] / micronsPerPixel) * (.67 + .69 * dot.size) * (.56 + .44 * reading.maturity);
+        ctx.drawImage(sprites[dot.shape], x + dx - size / 2, y + dy - size / 2, size, size);
       }
     }
   }
-  if (sample.deposit > 0) {
-    const crest = y + radius * (1.16 - 2.32 * sample.deposit);
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(x - radius, crest);
-    for (let i = 1; i <= 38; i++) {
-      const bump = (random(sample.seed + i * 43) - .5) * radius * .14;
-      ctx.lineTo(x - radius + 2 * radius * i / 38, crest + bump);
-    }
-    ctx.lineTo(x + radius, y + radius);
-    ctx.lineTo(x - radius, y + radius);
-    ctx.closePath();
-    ctx.fillStyle = "#725b40";
-    ctx.fill();
-    ctx.clip();
-    if (dirt.naturalWidth) {
-      ctx.globalAlpha = .68;
-      ctx.drawImage(dirt, x - radius, y - radius, radius * 2, radius * 2);
-    }
-    ctx.restore();
-  }
+  if (sample.deposit > 0) drawMicroscopeSediment(ctx, x, y, radius, sample, sediment);
   ctx.restore();
   ctx.beginPath();
   ctx.arc(x,y,radius + 2.5,0,Math.PI*2);
@@ -442,7 +485,7 @@ function drawMicroscope(ctx, frame, reading, sample, time, sprites, dirt) {
   ctx.stroke();
 
   const left = x - radius * .51;
-  const bar = radius * 2 * 100 / 660;
+  const bar = 100 / micronsPerPixel;
   const baseline = y + radius * .65;
   ctx.fillStyle = sample.deposit > .28 ? "#fff3da" : "#453c2d";
   ctx.fillRect(left, baseline, bar, 1.5);
@@ -466,6 +509,8 @@ export class StationView {
     this.lens = microscope.getContext("2d");
     this.lensFrame = null;
     this.sprites = this.ctx ? Array.from({length:5}, (_, index) => createFloc(index)) : [];
+    this.microscopeSprites = null;
+    this.microscopeSediment = null;
     const haze = document.createElement("canvas");
     haze.width = 64;
     haze.height = 48;
@@ -496,6 +541,10 @@ export class StationView {
     const w = this.microscope.clientWidth;
     const h = this.microscope.clientHeight;
     if (!this.lens || !w || !h) return;
+    if (!this.microscopeSprites) {
+      this.microscopeSprites = Array.from({ length: 7 }, (_, index) => createFloc(index, true));
+      this.microscopeSediment = createMicroscopeSediment(this.microscopeSprites);
+    }
     const dpr = Math.min(devicePixelRatio || 1, 1.8);
     this.microscope.width = Math.round(w * dpr);
     this.microscope.height = Math.round(h * dpr);
@@ -534,6 +583,8 @@ export class StationView {
   }
 
   drawSample(reading, sample, time) {
-    if (this.lensFrame) drawMicroscope(this.lens, this.lensFrame, reading, sample, time, this.sprites, this.dirt);
+    if (this.lensFrame) {
+      drawMicroscope(this.lens, this.lensFrame, reading, sample, time, this.microscopeSprites, this.microscopeSediment);
+    }
   }
 }
