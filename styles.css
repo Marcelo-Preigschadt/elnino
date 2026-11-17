@@ -67,6 +67,7 @@ h1 { font: 400 clamp(3.25rem, 5.4vw, 5.25rem)/.99 var(--display); letter-spacing
 .water-inlet small, .measurements small { color: var(--muted); font-size: .71rem; }
 
 .station-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, .47fr); gap: 16px; align-items: start; }
+.basin { position: sticky; top: 12px; }
 .card { min-width: 0; border: 1px solid var(--line); border-radius: 13px; background: white; box-shadow: 0 5px 20px #24453709; overflow: hidden; }
 .card-header { min-height: 46px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-inline: 14px; }
 .card-header h2 { font-size: .96rem; }
@@ -239,6 +240,7 @@ select, .correction-panel input { min-height: 32px; color: var(--ink); backgroun
 @media (max-width: 780px) {
   .wrap { width: calc(100% - 28px); }
   .station-layout { grid-template-columns: minmax(0,1fr); gap: 10px; }
+  .basin { position: static; }
   .stages { grid-template-columns: repeat(2,minmax(0,1fr)); padding: 5px 6px; }
   .stages small { display: none; }
   .scene { min-height: 300px; }
