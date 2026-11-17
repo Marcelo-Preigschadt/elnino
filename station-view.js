@@ -1,4 +1,5 @@
-import { clamp } from "./treatment.js?v=4";
+import { clamp } from "./treatment.js?v=7";
+import { drawMicrobiology } from "./microbiology.js?v=7";
 
 const width = 1120;
 const height = 720;
@@ -91,10 +92,10 @@ export function inspectPoint(reading, point) {
   const columnHeight = localFloor - waterline;
   const worldY = waterline + columnHeight * depth;
   const crest = sludgeTop(worldX, reading.retained, localFloor);
-  const inSludge = reading.retained >= .007 && worldY >= crest;
+  const inSludge = !reading.chlorine && reading.retained >= .007 && worldY >= crest;
   const fieldHeight = .11 * columnHeight;
   const bedThickness = localFloor - crest;
-  const deposit = reading.retained < .007 ? 0
+  const deposit = reading.chlorine || reading.retained < .007 ? 0
     : clamp(.55 + (worldY - crest) / fieldHeight) * clamp(bedThickness / 6);
   const groups = reading.suspension.map(({ mass, drop }) => {
     const front = columnDrop(drop, x);
@@ -350,6 +351,38 @@ function drawOutlet(ctx, reading, time) {
   }
 }
 
+function drawChlorineInstruments(ctx, plant, time) {
+  const treatment = plant.chlorination;
+  const lastDose = treatment.doses.at(-1);
+  if (lastDose && treatment.seconds - lastDose.seconds < 12) {
+    const x = width * .26;
+    const impact = waterline - 14;
+    ctx.strokeStyle = "#d8ede3b2";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x, topBack[0][1] - 25);
+    ctx.lineTo(x, impact);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(x, impact, 13 + Math.sin(time * 5) * 4, 3, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  if (treatment.electrode === null) return;
+  const x = width * .72;
+  const y = topBack[0][1] - 33;
+  ctx.fillStyle = "#233d37";
+  ctx.fillRect(x - 25, y, 50, 47);
+  ctx.fillStyle = "#b8d5b6";
+  ctx.fillRect(x - 19, y + 7, 38, 24);
+  ctx.font = "700 15px monospace";
+  ctx.fillStyle = "#1b382b";
+  ctx.fillText(treatment.electrode.toFixed(2), x - 18, y + 24);
+  ctx.fillStyle = "#687b72";
+  ctx.fillRect(x - 4, y + 47, 8, 83);
+  ctx.fillStyle = "#c5d5c6";
+  ctx.fillRect(x - 2, y + 124, 4, 20);
+}
+
 function drawSamplingPoint(ctx, point, scale) {
   const x = waterLeft + waterWidth * point.x;
   const y = point.surfaceY ?? waterline + (floorAt(x) - waterline) * point.depth;
@@ -579,12 +612,14 @@ export class StationView {
     drawReagent(ctx,plant,time);
     drawProbe(ctx,plant);
     if (plant.phase === "settling" || plant.phase === "result") drawOutlet(ctx,reading,time);
+    if (plant.phase === "disinfection") drawChlorineInstruments(ctx, plant, time);
     if (point) drawSamplingPoint(ctx, point, scale);
   }
 
-  drawSample(reading, sample, time) {
+  drawSample(reading, sample, time, biology = null, showInactive = false) {
     if (this.lensFrame) {
-      drawMicroscope(this.lens, this.lensFrame, reading, sample, time, this.microscopeSprites, this.microscopeSediment);
+      if (biology) drawMicrobiology(this.lens, this.lensFrame, biology, time, showInactive);
+      else drawMicroscope(this.lens, this.lensFrame, reading, sample, time, this.microscopeSprites, this.microscopeSediment);
     }
   }
 }

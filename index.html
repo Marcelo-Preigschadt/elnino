@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f6f8f6">
-  <meta name="description" content="Estação de tratamento de água virtual. Aplique policloreto de alumínio, observe a formação de flocos e acompanhe a decantação.">
+  <meta name="description" content="Estação de tratamento de água virtual com pH, PAC, decantação, cloração e microscopia de partículas, bactérias e protozoários.">
   <title>Estação de Tratamento de Água | ETA Virtual</title>
   <link rel="icon" href="./assets/favicon.png" type="image/png">
   <link rel="preload" href="./assets/eta/coagulacao.webp" as="image" type="image/webp">
-  <link rel="stylesheet" href="./styles.css?v=5">
-  <script type="module" src="./app.js?v=6"></script>
+  <link rel="stylesheet" href="./styles.css?v=7">
+  <script type="module" src="./app.js?v=7"></script>
 </head>
 <body>
   <a class="skip-link" href="#estacao">Ir para a estação</a>
@@ -30,7 +30,7 @@
     <header class="intro">
       <div class="intro-title">
         <h1>Estação de tratamento de água</h1>
-        <p>Meça o pH, dose o PAC e acompanhe a formação e a sedimentação dos flocos.</p>
+        <p>Da correção do pH à desinfecção. Observe os flocos e os microrganismos em cada etapa.</p>
       </div>
       <dl class="water-inlet" aria-label="Condição inicial da água">
         <div><dt>Água bruta</dt><dd><span data-raw-turbidity>120</span> <small>uT</small></dd></div>
@@ -58,7 +58,7 @@
         <dl class="measurements" aria-label="Medições simuladas da estação">
           <div><dt>Tempo da etapa</dt><dd id="process-time">00:00</dd></div>
           <div><dt>Turbidez estimada</dt><dd><span id="turbidity">120</span> <small>uT</small></dd></div>
-          <div><dt>Sólidos no fundo</dt><dd id="solids">0%</dd></div>
+          <div><dt id="solids-label">Sólidos no fundo</dt><dd id="solids">0%</dd></div>
         </dl>
         <div class="scene-legend" id="settling-legend" hidden>
           <span><i class="legend-water"></i>Sobrenadante</span>
@@ -69,10 +69,11 @@
 
       <aside class="card operation" aria-labelledby="operation-title">
         <header class="card-header"><h2 id="operation-title">Operação da estação</h2></header>
-        <ol class="stages" aria-label="Etapas da clarificação">
+        <ol class="stages" aria-label="Etapas do tratamento">
           <li id="stage-coagulation" aria-current="step"><span class="stage-number" aria-hidden="true">1</span><span><strong>Coagulação</strong><small>pH, dosagem de PAC e mistura rápida</small></span></li>
           <li id="stage-flocculation"><span class="stage-number" aria-hidden="true">2</span><span><strong>Floculação</strong><small>Agitação lenta na galeria</small></span></li>
           <li id="stage-settling"><span class="stage-number" aria-hidden="true">3</span><span><strong>Decantação</strong><small>Sedimentação e coleta na superfície</small></span></li>
+          <li id="stage-disinfection"><span class="stage-number" aria-hidden="true">4</span><span><strong>Desinfecção</strong><small>Filtração, cloro e tempo de contato</small></span></li>
         </ol>
 
         <div class="operation-content">
@@ -150,7 +151,81 @@
               <div><dt>Água clarificada</dt><dd id="sample-outlet"></dd></div>
               <div><dt>Redução de turbidez</dt><dd id="sample-reduction"></dd></div>
             </dl>
-            <button type="button" class="button button-primary" id="repeat">Fazer nova dosagem</button>
+            <button type="button" class="button button-primary" id="to-disinfection">Filtrar e enviar à cloração</button>
+            <button type="button" class="button button-secondary next-step" id="repeat">Fazer nova dosagem de PAC</button>
+          </section>
+
+          <section id="panel-disinfection" hidden>
+            <h3 id="heading-disinfection" tabindex="-1">Cloração e tempo de contato</h3>
+            <p>A amostra passou por filtração simplificada. Observe os microrganismos, adicione um derivado clorado e acompanhe a inativação.</p>
+            <button type="button" class="button button-secondary" id="observe-before">Ver microrganismos antes do cloro</button>
+            <div class="chlorine-dosage">
+              <label for="chlorine-product">Derivado clorado</label>
+              <select id="chlorine-product">
+                <option value="sodium">Hipoclorito de sódio · 12%</option>
+                <option value="diluted">Hipoclorito de sódio · 2,5%</option>
+                <option value="calcium">Hipoclorito de cálcio · 65%</option>
+                <option value="gas">Cloro gasoso · 100% equivalente</option>
+              </select>
+              <p id="chlorine-product-info"></p>
+              <label for="chlorine-dose">Dose do produto (mg/L)</label>
+              <input type="number" id="chlorine-dose" min="0.1" max="200" step="0.1" value="25" inputmode="decimal">
+              <p class="chlorine-equivalent">Cloro ativo a adicionar <output id="chlorine-equivalent" for="chlorine-dose chlorine-product"></output></p>
+              <button type="button" class="button button-primary" id="apply-chlorine">Adicionar cloro e observar</button>
+            </div>
+            <dl class="chlorine-readings">
+              <div><dt>Cloro ativo acumulado</dt><dd id="chlorine-total-dose"></dd></div>
+              <div><dt>Contato acumulado</dt><dd id="chlorine-contact"></dd></div>
+              <div><dt>CT integrado</dt><dd><span id="chlorine-ct"></span> <small>mg·min/L</small></dd></div>
+              <div><dt>pH / temperatura</dt><dd id="chlorine-conditions"></dd></div>
+            </dl>
+            <p class="contact-feedback" id="chlorine-help"></p>
+            <div class="phase-progress">
+              <label for="disinfection-progress">Observação do contato</label><span id="disinfection-percent">0%</span>
+              <progress id="disinfection-progress" max="100" value="0"></progress>
+            </div>
+            <section class="chlorine-test" aria-labelledby="oto-heading">
+              <h4 id="oto-heading">Comparador com ortotolidina</h4>
+              <p>O amarelo acompanha o cloro residual total da amostra coletada.</p>
+              <div class="oto-comparator" aria-label="Comparador colorimétrico de cloro total">
+                <div class="oto-tube"><span>Branco</span><i class="cuvette" aria-hidden="true"></i></div>
+                <div class="oto-tube"><span>Amostra + OTO</span><i class="cuvette oto-sample" id="oto-sample" aria-hidden="true"></i></div>
+                <div class="oto-result"><output id="oto-value" aria-label="Cloro total por ortotolidina">—</output><small>mg/L de Cl₂ total</small><span id="oto-state">Aguardando ensaio</span></div>
+              </div>
+              <div class="oto-scale" aria-label="Padrões de cor em mg/L de cloro total">
+                <span style="--sample-color:rgb(255,255,251)">0</span>
+                <span style="--sample-color:rgb(255,248,222)">0,2</span>
+                <span style="--sample-color:rgb(255,239,185)">0,5</span>
+                <span style="--sample-color:rgb(255,227,137)">1</span>
+                <span style="--sample-color:rgb(255,212,76)">2</span>
+                <span style="--sample-color:rgb(255,204,43)">3</span>
+                <span style="--sample-color:rgb(255,198,16)">5</span>
+              </div>
+              <button type="button" class="button button-secondary" id="test-oto">Coletar amostra e adicionar OTO</button>
+            </section>
+            <section class="chlorine-test" aria-labelledby="electrode-heading">
+              <h4 id="electrode-heading">Eletrodo seletivo de cloro</h4>
+              <p>Sensor amperométrico de cloro livre, com leitura contínua.</p>
+              <div class="electrode-meter">
+                <div class="electrode-icon" aria-hidden="true"></div>
+                <div><output id="electrode-value" aria-label="Cloro livre no sensor">—</output><small>mg/L de Cl₂ livre</small></div>
+                <span id="electrode-state">Sonda fora da água</span>
+              </div>
+              <button type="button" class="button button-secondary" id="immerse-electrode">Imergir eletrodo</button>
+            </section>
+            <details class="chlorine-products">
+              <summary>Teores dos produtos do cenário</summary>
+              <table>
+                <thead><tr><th scope="col">Produto</th><th scope="col">Cloro ativo</th></tr></thead>
+                <tbody>
+                  <tr><td>Hipoclorito de sódio concentrado</td><td>12%</td></tr>
+                  <tr><td>Hipoclorito de sódio diluído</td><td>2,5%</td></tr>
+                  <tr><td>Hipoclorito de cálcio</td><td>65%</td></tr>
+                  <tr><td>Cloro gasoso puro</td><td>100%</td></tr>
+                </tbody>
+              </table>
+              <p>Percentuais em massa, expressos como Cl₂ equivalente. As concentrações comerciais variam conforme o produto e o laudo do lote.</p>
+            </details>
           </section>
 
           <details class="ph-history" id="ph-history" hidden>
@@ -190,6 +265,10 @@
           <h3>Decantação</h3>
           <p>Os flocos se depositam e formam lodo. A água clarificada sai pela canaleta superior e segue para filtração e desinfecção.</p>
         </article>
+        <article>
+          <h3>Desinfecção</h3>
+          <p>O cloro reage com a água e com os microrganismos. A inativação depende do residual livre, do pH e do tempo de contato. Compare o campo antes da dose e durante o tratamento.</p>
+        </article>
       </div>
     </section>
 
@@ -200,12 +279,19 @@
         <p>O campo microscópico é ilustrativo. A concentração de partículas varia com o tempo, a profundidade e a posição escolhida entre a entrada e a saída do decantador.</p>
         <p>O ensaio de jarros permite avaliar, entre outros parâmetros, o pH e a turbidez residual da água captada.</p>
         <p>O cenário tem 45 segundos de mistura rápida, até 25 minutos de floculação e até duas horas de permanência no decantador. A imagem mostra o movimento de uma parcela representativa da água na unidade.</p>
+        <p>A filtração é uma transferência simplificada que retira 99,5% da massa de partículas remanescente. O tanque de contato acompanha até 60 minutos. O modelo integra o cloro livre ao longo do tempo e representa demanda inicial, decaimento e uma pequena fração de cloro combinado.</p>
+        <p>A ortotolidina (OTO) é o reagente do ensaio amarelo. Sua leitura aqui representa cloro total. O eletrodo é um sensor amperométrico seletivo para cloro livre, com estabilização abreviada para a atividade.</p>
+        <p>A microscopia mostra morfologias de bactérias e formas vegetativas de protozoários, em escalas próprias. A viabilidade é calculada pelo modelo de exposição ao cloro. Estruturas celulares inativadas podem permanecer visíveis. Cistos resistentes, como os de Cryptosporidium, exigem outras barreiras de tratamento.</p>
+        <p>As populações microscópicas, a demanda de cloro e as constantes de inativação são didáticas. O pH da etapa de cloração é mantido no valor medido após a mistura, com temperatura de 25 °C.</p>
         <ul>
           <li><a href="https://www.comusa.rs.gov.br/index.php/saneamento/tratamentoagua">COMUSA · Etapas do tratamento de água</a></li>
           <li><a href="https://bvsms.saude.gov.br/bvs/publicacoes/funasa/capitulo_2.pdf">Funasa · Manual de Saneamento</a></li>
           <li><a href="https://www.rj.gov.br/agenersa/sites/default/files/arquivos_paginas_basicas/RF%20177-2024.pdf">AGENERSA · Uso de PAC e ensaio de jarros em ETA</a></li>
           <li><a href="https://guidelines.nhmrc.gov.au/australian-drinking-water-guidelines/part-5/treatment-chemicals/polyaluminium-chloride">NHMRC · Hidrólise do policloreto de alumínio</a></li>
           <li><a href="https://water.usgs.gov/water-resources/memos/memo.php?id=2098">USGS · Alcalinidade e equilíbrio carbonático</a></li>
+          <li><a href="https://www.funasa.gov.br/site/wp-content/files_mf/manualdecloracaodeaguaempequenascomunidades.pdf">Funasa · Manual de cloração e ensaio com ortotolidina</a></li>
+          <li><a href="https://www.ncbi.nlm.nih.gov/books/NBK579466/table/ch7.tab7/">OMS · Redução de bactérias e protozoários no tratamento de água</a></li>
+          <li><a href="https://my.hach.com/9184sc-free-chlorine-afc-amperometric-sensor/product-details?id=59428579093">Hach · Princípio amperométrico do sensor de cloro livre</a></li>
         </ul>
       </details>
     </footer>
@@ -218,15 +304,38 @@
       </div>
       <form method="dialog"><button class="button button-secondary" id="close-microscope" autofocus>Voltar ao tanque</button></form>
     </header>
+    <div class="micro-controls">
+      <label for="microscope-mode">Observar</label>
+      <select id="microscope-mode">
+        <option value="particles">Flocos e partículas</option>
+        <option value="bacteria">Bactérias · campo de 50 µm</option>
+        <option value="protozoa">Protozoários · campo de 400 µm</option>
+      </select>
+      <div class="micro-comparison" id="micro-comparison" role="group" aria-label="Comparar a cloração" hidden>
+        <button type="button" id="micro-before" aria-pressed="false">Antes do cloro</button>
+        <button type="button" id="micro-now" aria-pressed="true">Agora</button>
+      </div>
+    </div>
     <div class="microscope-field">
       <canvas id="microscope-scene" role="img" aria-label="Campo microscópico da amostra."></canvas>
       <span id="micro-status"></span>
     </div>
-    <dl class="micro-readings">
+    <dl class="micro-readings" id="particle-readings">
       <div><dt>Profundidade relativa</dt><dd id="micro-depth"></dd></div>
       <div><dt>Partículas em suspensão</dt><dd id="micro-concentration"></dd></div>
     </dl>
-    <p class="micro-note">Campo ilustrativo do ponto selecionado. Volte ao tanque e toque em outro ponto para comparar.</p>
+    <div class="biology-readings" id="biology-readings" hidden>
+      <dl class="micro-readings">
+        <div><dt>Ativos no campo simulado</dt><dd id="bio-active"></dd></div>
+        <div><dt>Contato com cloro</dt><dd id="bio-contact"></dd></div>
+      </dl>
+      <p id="bio-species"></p>
+      <div class="micro-actions">
+        <label><input type="checkbox" id="show-inactive"> Exibir estruturas inativadas</label>
+        <button type="button" class="button button-secondary pause" id="micro-pause" hidden>Pausar contato</button>
+      </div>
+    </div>
+    <p class="micro-note" id="micro-note">Campo ilustrativo do ponto selecionado. Volte ao tanque e toque em outro ponto para comparar.</p>
   </dialog>
   <div class="sr-only" id="announcement" role="status" aria-live="polite"></div>
   <noscript><p class="no-script">Ative o JavaScript no navegador para operar a estação.</p></noscript>

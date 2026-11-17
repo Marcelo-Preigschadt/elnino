@@ -1,15 +1,17 @@
-import { Treatment, alkalinity, clamp, correctors, initialIncrement, maxDose, maximumCorrection, process, rawTurbidity } from "./treatment.js?v=4";
-import { StationView, inspectPoint } from "./station-view.js?v=6";
+import { Treatment, alkalinity, clamp, correctors, initialIncrement, maxDose, maximumCorrection, process, rawTurbidity } from "./treatment.js?v=7";
+import { StationView, inspectPoint } from "./station-view.js?v=7";
+import { activeChlorine, chlorineProducts, otoColor } from "./chlorine.js?v=7";
+import { organismsAt } from "./microbiology.js?v=7";
 
 const byId = (id) => document.getElementById(id);
 const canvas = byId("treatment-scene");
 const scene = byId("scene");
-const progress = ["coagulation", "flocculation", "settling"].map((name) => ({
+const progress = ["coagulation", "flocculation", "settling", "disinfection"].map((name) => ({
   bar: byId(name + "-progress"),
   text: byId(name + "-percent"),
   step: byId("stage-" + name),
 }));
-const panels = Object.fromEntries(["dose", "flocculation", "settling", "result"].map((name) => [
+const panels = Object.fromEntries(["dose", "flocculation", "settling", "result", "disinfection"].map((name) => [
   name, byId("panel-" + name),
 ]));
 const speedControl = byId("speed");
@@ -20,6 +22,10 @@ const correctorControl = byId("corrector");
 const correctionDose = byId("correction-dose");
 const microscope = byId("microscope");
 const lens = byId("microscope-scene");
+const microscopeMode = byId("microscope-mode");
+const chlorineProduct = byId("chlorine-product");
+const chlorineDose = byId("chlorine-dose");
+const showInactive = byId("show-inactive");
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const decimal = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
 const pHFormat = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -28,13 +34,15 @@ const titles = {
   flocculation: "Galeria de floculação",
   settling: "Decantador",
   result: "Decantador",
+  disinfection: "Tanque de contato com cloro",
 };
 
-const useDecanterExample = new URLSearchParams(location.search).get("exemplo") === "decantador";
-let plant = useDecanterExample ? startDecanterExample() : new Treatment();
+const exampleName = new URLSearchParams(location.search).get("exemplo");
+let plant = ["decantador", "cloracao"].includes(exampleName) ? startExample(exampleName) : new Treatment();
 let currentPanel = null;
 let lastReadCount = -1;
-let paused = useDecanterExample;
+let paused = exampleName === "decantador";
+let microBefore = false;
 let selectedPoint = null;
 let frameId = 0;
 let previousFrame = 0;
@@ -45,7 +53,7 @@ let dirty = true;
 let lastStatus = "";
 const view = new StationView(canvas, lens, queue);
 
-function startDecanterExample() {
+function startExample(name) {
   const example = new Treatment();
   example.measure();
   example.stepMeter(3);
@@ -57,6 +65,11 @@ function startDecanterExample() {
   example.step(18 * 60);
   example.advance();
   example.step(20 * 60);
+  if (name === "cloracao") {
+    example.step(process.settling.duration);
+    example.advance();
+    example.startDisinfection();
+  }
   return example;
 }
 
@@ -88,7 +101,7 @@ function operationName(operation) {
 function renderPanels(panel) {
   if (currentPanel === panel) return;
   for (const [key, element] of Object.entries(panels)) element.hidden = key !== panel;
-  const index = ["dose", "flocculation", "settling", "result"].indexOf(panel);
+  const index = panel === "result" ? 2 : ["dose", "flocculation", "settling", "disinfection"].indexOf(panel);
   progress.forEach(({ step }, position) => {
     if (position === index) step.setAttribute("aria-current", "step");
     else step.removeAttribute("aria-current");
@@ -182,6 +195,42 @@ function renderStage(panel, reading) {
     put("sample-outlet", decimal.format(reading.turbidity) + " uT");
     put("sample-reduction", decimal.format(100 * reading.retained) + "%");
   }
+  if (panel === "disinfection") renderDisinfection(reading);
+}
+
+function renderDisinfection(reading) {
+  const treatment = plant.chlorination;
+  const { chlorine } = reading;
+  const product = chlorineProducts[chlorineProduct.value];
+  put("chlorine-product-info", product.form + " · " + product.formula + " · "
+    + decimal.format(product.active) + "% de cloro ativo");
+  put("chlorine-equivalent", pHFormat.format(activeChlorine(chlorineProduct.value, chlorineDose.valueAsNumber)) + " mg/L como Cl₂");
+  put("chlorine-total-dose", pHFormat.format(chlorine.applied) + " mg/L como Cl₂");
+  put("chlorine-contact", elapsedLabel(chlorine.seconds));
+  put("chlorine-ct", pHFormat.format(chlorine.ct));
+  put("chlorine-conditions", pHFormat.format(reading.ph) + " / 25 °C");
+  setProgress(3, plant.unit);
+  let help = "Abra a amostra antes da cloração para observar as formas de bactérias e protozoários.";
+  if (chlorine.applied && chlorine.free < .01) help = "A demanda inicial consumiu o cloro livre. Compare os medidores e ajuste outra dose.";
+  else if (chlorine.applied) help = "O residual livre atua durante o contato. Compare a amostra atual com a amostra antes do cloro.";
+  if (chlorine.applied && !plant.active) help = "A observação deste contato terminou. Compare os organismos ativos e as estruturas inativadas.";
+  put("chlorine-help", help);
+
+  const developing = treatment.oto && treatment.otoSeconds < 2;
+  byId("test-oto").disabled = Boolean(developing);
+  put("oto-value", !treatment.oto ? "—" : developing ? "···"
+    : treatment.oto.total > 10 ? ">10" : pHFormat.format(treatment.oto.total));
+  put("oto-state", !treatment.oto ? "Aguardando ensaio" : developing ? "Desenvolvendo a cor"
+    : "Coletada aos " + elapsedLabel(treatment.oto.seconds));
+  const color = treatment.oto ? otoColor(treatment.oto.total * clamp(treatment.otoSeconds / 2)) : otoColor(0);
+  byId("oto-sample").style.setProperty("--sample-color", color);
+
+  const attached = treatment.electrode !== null;
+  const stabilizing = attached && treatment.electrodeSeconds < 3;
+  put("electrode-value", !attached ? "—" : stabilizing ? "···" : pHFormat.format(treatment.electrode));
+  put("electrode-state", !attached ? "Sonda fora da água" : stabilizing ? "Estabilizando" : "Leitura contínua");
+  byId("immerse-electrode").disabled = attached;
+  put("immerse-electrode", attached ? "Eletrodo imerso" : "Imergir eletrodo");
 }
 
 function sceneStatus(panel, reading) {
@@ -194,6 +243,11 @@ function sceneStatus(panel, reading) {
   }
   if (panel === "flocculation") return reading.aggregated < .08 ? "Agitação lenta na galeria" : "Flocos em formação";
   if (panel === "result") return "Amostra coletada";
+  if (panel === "disinfection") {
+    if (!reading.chlorine.applied) return "Água filtrada antes do cloro";
+    if (paused) return "Contato com cloro pausado";
+    return plant.active ? "Cloro em contato com a água" : "Contato observado";
+  }
   if (!plant.active) return "Fim da observação";
   return reading.retained < .18 ? "Flocos descendo no decantador" : "Lodo acumulando no fundo";
 }
@@ -207,7 +261,8 @@ function updateInterface(reading) {
   byId("settling-legend").hidden = panel !== "settling" && panel !== "result";
   put("process-time", elapsedLabel(reading.seconds));
   put("turbidity", decimal.format(reading.turbidity));
-  put("solids", Math.round(100 * reading.retained) + "%");
+  put("solids-label", reading.chlorine ? "Cloro ativo aplicado" : "Sólidos no fundo");
+  put("solids", reading.chlorine ? decimal.format(reading.chlorine.applied) + " mg/L" : Math.round(100 * reading.retained) + "%");
 
   const status = sceneStatus(panel, reading);
   put("scene-status", status);
@@ -217,6 +272,7 @@ function updateInterface(reading) {
   }
   const caption = panel === "dose" ? "Câmara de ajuste de pH e dosagem"
     : panel === "flocculation" ? "Água seguindo para o decantador"
+    : panel === "disinfection" ? "Água filtrada · tanque de contato"
     : "Saída pela canaleta → filtração";
   put("scene-caption", caption);
   scene.toggleAttribute("data-active", (plant.active && !paused) || plant.meterActive);
@@ -234,7 +290,7 @@ function pointLabel({ x, depth }) {
   return layer + " · " + side;
 }
 
-function renderMicroscope(sample) {
+function renderMicroscope(sample, biology = null) {
   const location = pointLabel(selectedPoint);
   const settling = plant.phase === "settling" || plant.phase === "result";
   const flocs = sample.flocs >= .046;
@@ -245,18 +301,41 @@ function renderMicroscope(sample) {
     : flocs ? "Flocos em formação" : "Partículas finas dispersas";
   const concentration = Math.round(100 * sample.concentration) + "% da água bruta";
   put("micro-location", location);
-  put("micro-status", status);
+  const bioStatus = !biology ? "" : microBefore ? "Antes da cloração"
+    : biology.active ? "Microrganismos ativos no campo" : "Nenhum organismo ativo no campo simulado";
+  put("micro-status", biology ? bioStatus : status);
   put("micro-depth", Math.round(100 * selectedPoint.depth) + "%");
   put("micro-concentration", concentration);
-  lens.setAttribute("aria-label", location + ". " + status + ". " + concentration + ".");
+  byId("particle-readings").hidden = Boolean(biology);
+  byId("biology-readings").hidden = !biology;
+  byId("micro-comparison").hidden = !biology || !plant.chlorination;
+  byId("micro-before").setAttribute("aria-pressed", String(microBefore));
+  byId("micro-now").setAttribute("aria-pressed", String(!microBefore));
+  if (biology) {
+    put("bio-active", biology.active + " de " + biology.total);
+    put("bio-contact", microBefore ? "Antes da dose" : elapsedLabel(plant.chlorination?.seconds ?? 0));
+    put("bio-species", biology.counts.map(({ name, active }) => name + " " + active).join(" · "));
+    byId("micro-pause").hidden = !plant.chlorination?.running || !plant.active;
+    put("micro-pause", paused ? "Retomar contato" : "Pausar contato");
+  }
+  put("micro-note", biology
+    ? "Morfologias e viabilidade simuladas. A inativação pode preservar estruturas celulares. Confirmação de viabilidade exige ensaios microbiológicos."
+    : "Campo ilustrativo do ponto selecionado. Volte ao tanque e toque em outro ponto para comparar.");
+  lens.setAttribute("aria-label", location + ". " + (biology ? bioStatus + ". " + biology.active + " ativos no campo simulado." : status + ". " + concentration + "."));
 }
 
 function openMicroscope(point) {
   selectedPoint = point;
-  renderMicroscope(inspectPoint(plant.read(), point));
+  const reading = plant.read();
+  renderMicroscope(inspectPoint(reading, point), biologyFor(reading));
   microscope.showModal();
   view.resizeMicroscope();
   queue();
+}
+
+function biologyFor(reading) {
+  if (!selectedPoint || microscopeMode.value === "particles") return null;
+  return organismsAt(microscopeMode.value, selectedPoint, reading.chlorine, microBefore);
 }
 
 function clockRate() {
@@ -272,23 +351,26 @@ function frame(now) {
   frameId = 0;
   const elapsed = previousFrame ? Math.min(.25, (now - previousFrame) / 1000) : 0;
   previousFrame = now;
-  const wasMoving = (plant.active && !paused) || plant.meterActive;
+  const bioMoving = microscope.open && microscopeMode.value !== "particles" && !paused;
+  const wasMoving = (plant.active && !paused) || plant.meterActive || plant.chlorination?.instrumentsActive || bioMoving;
   if (plant.meterActive) plant.stepMeter(elapsed);
+  plant.chlorination?.stepInstruments(elapsed);
   if (!paused) plant.step(elapsed * clockRate());
   if (wasMoving) visualTime += elapsed;
-  const moving = (plant.active && !paused) || plant.meterActive;
+  const moving = (plant.active && !paused) || plant.meterActive || plant.chlorination?.instrumentsActive || bioMoving;
   const justStopped = wasMoving && !moving;
   const reading = plant.read();
   const sample = microscope.open && selectedPoint ? inspectPoint(reading, selectedPoint) : null;
+  const biology = sample ? biologyFor(reading) : null;
   if (dirty || now - lastUi >= 120 || justStopped) {
     updateInterface(reading);
-    if (sample) renderMicroscope(sample);
+    if (sample) renderMicroscope(sample, biology);
     lastUi = now;
   }
   if (dirty || (wasMoving && now - lastPaint >= 1000 / 32) || justStopped) {
     const time = reducedMotion.matches ? 0 : visualTime;
     if (dirty || !sample) view.draw(plant, reading, selectedPoint, time);
-    if (sample) view.drawSample(reading, sample, time);
+    if (sample) view.drawSample(reading, sample, time, biology, showInactive.checked);
     lastPaint = now;
   }
   dirty = false;
@@ -300,6 +382,11 @@ function reset() {
   plant = new Treatment();
   paused = false;
   selectedPoint = null;
+  microBefore = false;
+  microscopeMode.value = "particles";
+  showInactive.checked = false;
+  chlorineProduct.value = "sodium";
+  chlorineDose.value = "25";
   if (microscope.open) microscope.close();
   doseControl.max = maxDose;
   doseControl.value = initialIncrement;
@@ -336,9 +423,38 @@ byId("apply-correction").addEventListener("click", () => {
 byId("to-flocculation").addEventListener("click", advance);
 byId("to-settling").addEventListener("click", advance);
 byId("take-sample").addEventListener("click", advance);
+byId("to-disinfection").addEventListener("click", () => {
+  plant.startDisinfection();
+  selectedPoint = null;
+  microscopeMode.value = "protozoa";
+  microBefore = false;
+  paused = false;
+  queue();
+});
+byId("observe-before").addEventListener("click", () => {
+  microscopeMode.value = "protozoa";
+  microBefore = true;
+  openMicroscope(selectedPoint ?? { x: .5, depth: .5 });
+});
+chlorineProduct.addEventListener("change", queue);
+chlorineDose.addEventListener("input", queue);
+byId("apply-chlorine").addEventListener("click", () => {
+  if (!chlorineDose.reportValidity() || !plant.addChlorine(chlorineProduct.value, chlorineDose.valueAsNumber)) return;
+  paused = false;
+  microBefore = false;
+  if (microscopeMode.value === "particles") microscopeMode.value = "protozoa";
+  openMicroscope(selectedPoint ?? { x: .5, depth: .5 });
+});
+byId("test-oto").addEventListener("click", () => { plant.chlorination?.testOto(); queue(); });
+byId("immerse-electrode").addEventListener("click", () => { plant.chlorination?.attachElectrode(); queue(); });
 for (const id of ["reset", "repeat"]) byId(id).addEventListener("click", reset);
 byId("pause").addEventListener("click", () => { paused = !paused; previousFrame = 0; queue(); });
 speedControl.addEventListener("change", () => { previousFrame = 0; queue(); });
+microscopeMode.addEventListener("change", queue);
+showInactive.addEventListener("change", queue);
+byId("micro-before").addEventListener("click", () => { microBefore = true; queue(); });
+byId("micro-now").addEventListener("click", () => { microBefore = false; queue(); });
+byId("micro-pause").addEventListener("click", () => { paused = !paused; previousFrame = 0; queue(); });
 const centerPoint = { x: .5, depth: .5 };
 canvas.addEventListener("click", (event) => {
   const point = event.detail === 0 ? (selectedPoint ?? centerPoint) : view.pointAt(event.clientX, event.clientY);

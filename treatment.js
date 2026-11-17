@@ -1,3 +1,5 @@
+import { Chlorination } from "./chlorine.js?v=7";
+
 export const rawTurbidity = 120;
 export const initialPh = 7.20;
 export const alkalinity = 22;
@@ -11,6 +13,7 @@ export const process = Object.freeze({
   coagulation: Object.freeze({ duration: 45, demonstrationRate: 3, doseSeconds: 12 }),
   flocculation: Object.freeze({ duration: 25 * 60, demonstrationRate: 30, minimumContact: 5 * 60 }),
   settling: Object.freeze({ duration: 2 * 60 * 60, demonstrationRate: 60, minimumContact: 15 * 60 }),
+  disinfection: Object.freeze({ duration: 60 * 60, demonstrationRate: 30, minimumContact: 30 * 60 }),
 });
 
 export const correctors = Object.freeze({
@@ -84,6 +87,8 @@ export class Treatment {
     this.readings = [];
     this.measurementSeconds = null;
     this.sample = null;
+    this.filtered = null;
+    this.chlorination = null;
   }
 
   get inMixingChamber() {
@@ -92,10 +97,12 @@ export class Treatment {
 
   get active() {
     const unit = this.unit;
+    if (this.phase === "disinfection") return this.chlorination.running && this.seconds < unit.duration;
     return Boolean(unit) && this.seconds < unit.duration;
   }
 
   get unit() {
+    if (this.phase === "disinfection") return { ...process.disinfection, duration: this.contactLimit };
     if (!this.inMixingChamber) return process[this.phase];
     if (!this.mixing) return null;
     return this.mixing.kind === "pac" ? process.coagulation : process.correction;
@@ -178,7 +185,33 @@ export class Treatment {
 
   step(seconds) {
     if (!this.active || !Number.isFinite(seconds) || seconds <= 0) return;
-    this.seconds = Math.min(this.seconds + seconds, this.unit.duration);
+    const increment = Math.min(seconds, this.unit.duration - this.seconds);
+    if (this.phase === "disinfection") this.chlorination.step(increment);
+    this.seconds += increment;
+  }
+
+  startDisinfection() {
+    if (this.phase !== "result" || !this.sample) return;
+    // A simplified granular filter removes 99.5% of the remaining particle mass.
+    // The microbiology field is a representative teaching sample after this barrier.
+    const turbidity = this.sample.turbidity * .005;
+    this.filtered = {
+      ...this.sample,
+      seconds: 0,
+      retained: 1 - turbidity / rawTurbidity,
+      turbidity,
+      suspension: this.sample.suspension.map(({ mass, drop }) => ({ mass: mass * (1 - clamp(drop)) * .005, drop: 0 })),
+    };
+    this.chlorination = new Chlorination(this.sample.ph, turbidity);
+    this.contactLimit = process.disinfection.duration;
+    this.phase = "disinfection";
+    this.seconds = 0;
+  }
+
+  addChlorine(product, dose) {
+    if (this.phase !== "disinfection" || !this.chlorination.add(product, dose)) return false;
+    if (this.seconds >= this.contactLimit) this.contactLimit += 30 * 60;
+    return true;
   }
 
   advance() {
@@ -202,6 +235,9 @@ export class Treatment {
   }
 
   read() {
+    if (this.phase === "disinfection") {
+      return { ...this.filtered, seconds: this.seconds, chlorine: this.chlorination.read() };
+    }
     if (this.sample) return this.sample;
     const flocTime = this.phase === "flocculation" ? this.seconds : this.flocculationSeconds;
     const maturity = 1 - Math.exp(-flocTime / 370);
